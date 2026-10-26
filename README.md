@@ -32,7 +32,7 @@ An interactive 3D guide to the modeling operations behind real parts, from extru
 
 ## Worked example: a 6'0" shortboard
 
-The page opens on a complete part built only from operations in the atlas. Each step has "Uses" chips that jump to the operations it relies on.
+The Example tab holds a complete part built only from operations in the atlas. Each step has "Uses" chips that jump to the operations it relies on.
 
 | Step | What happens | Uses |
 | --- | --- | --- |

@@ -67,7 +67,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
   <header>
     <div>
       <h1>CAD Operations Atlas</h1>
-      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. It opens on a worked example, a 6'0" shortboard built in ten steps. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
+      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. A worked example shows a 6'0" shortboard built in ten steps. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
     </div>
     <span class="count" id="count"></span>
   </header>
@@ -208,10 +208,10 @@ const EXOPS=[
 ["9. Leash plug","Revolved cut for the leash plug on the deck",["revolve","cut-and-hole"],t=>{board(1,1,MAT.res);fins(1,1,MAT.res);plug(t);return 'Leash plug';}],
 ["10. Zebra check","Stripes flow smoothly over the rails, so the surfaces are fair",["zebra-stripes","curvature-map"],t=>{board(1,1,MAT.zebra);fins(1,1,MAT.res);plug(1);return '6\'0" × '+BOARD.W+'" × '+BOARD.T+'", '+BOARD.L+' L';}]
 ].map((e,i)=>[EXT,EXG,e[0],e[1],e[3],'surfboard-'+(i+1),e[2]]);
-OPS.unshift(...EXOPS);
+OPS.push(...EXOPS);
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 OPS.forEach(o=>{if(o.length<6)o.push(slug(o[2]));});
-const NEX=EXOPS.length;
+const NEX=EXOPS.length,EX0=OPS.length-NEX,nextEx=i=>EX0+(i-EX0+1)%NEX;
 document.getElementById('count').textContent=(OPS.length-NEX)+' operations, 1 worked example';
 
 const vw=document.getElementById('vw');
@@ -240,14 +240,14 @@ function openTier(name,open){Object.entries(tiers).forEach(([k,t])=>{const on=k=
 OPS.forEach((o,i)=>{if(o[0]!==tier){tier=o[0];grp='';const name=tier,b=document.createElement('button');b.type='button';b.className='tier';b.innerHTML='<span></span><span class="n"></span>';b.firstChild.textContent=name==='Worked example'?'Example':name;b.title=name;box=document.createElement('div');box.className='items';box.id='tier-'+slug(name);b.setAttribute('aria-controls',box.id);b.onclick=()=>openTier(name,b.getAttribute('aria-expanded')!=='true');box.hidden=true;document.getElementById('tabs').append(b);tree.append(box);tiers[name]={b,box,n:0};}tiers[tier].n++;tiers[tier].b.lastChild.textContent=tiers[tier].n;if(o[1]!==grp){grp=o[1];const h=document.createElement('div');h.className='grp';h.textContent=grp;box.appendChild(h);}const a=document.createElement('a');a.href='#'+o[5];a.textContent=o[2];a.onclick=e=>{e.preventDefault();go(i);if(narrow.matches)openTier('',false);};box.appendChild(a);links.push(a);});
 const usesEl=document.getElementById('uses'),nx=document.getElementById('nx');
 function go(i){select(i);openTier(OPS[i][0],true);try{history.replaceState(null,'','#'+OPS[i][5]);}catch(_){}}
-nx.onclick=()=>go((cur+1)%NEX);
+nx.onclick=()=>go(nextEx(cur));
 function select(i){cur=i;T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
 usesEl.replaceChildren();const u=o[6]||[];usesEl.hidden=!u.length;if(u.length){const s=document.createElement('span');s.textContent='Uses';usesEl.appendChild(s);u.forEach(sl=>{const j=OPS.findIndex(q=>q[5]===sl);if(j<0)return;const b=document.createElement('button');b.type='button';b.textContent=OPS[j][2];b.onclick=()=>go(j);usesEl.appendChild(b);});}
-nx.hidden=i>=NEX;nx.textContent=i===NEX-1?'Start over':'Next step';if(reduce){T=1;}}
+nx.hidden=i<EX0;nx.textContent=i===OPS.length-1?'Start over':'Next step';if(reduce){T=1;}}
 function fromHash(){const h=(location.hash||'').slice(1),i=OPS.findIndex(o=>o[5]===h);select(i>=0?i:0);openTier(OPS[cur][0],!narrow.matches);}
 window.addEventListener('hashchange',fromHash);fromHash();
 
-function loop(now){if(playing&&cur<NEX&&now-start>3900){select((cur+1)%NEX);}if(playing){const ph=((now-start)%4000)/2600;const x=Math.min(1,ph);T=x*x*(3-2*x);}
+function loop(now){if(playing&&cur>=EX0&&now-start>3900){select(nextEx(cur));}if(playing){const ph=((now-start)%4000)/2600;const x=Math.min(1,ph);T=x*x*(3-2*x);}
 const tq=Math.round(T*100)/100;if(tq!==lastT||cur!==lastOp){T=tq;build();lastT=tq;lastOp=cur;sl.value=Math.round(T*100);pc.textContent=Math.round(T*100)+'%';}
 if(!drag&&!reduce)ry+=0.003;piv.rotation.set(rx,ry,0);ren.render(scene,cam);requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
