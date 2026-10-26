@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>CAD Operations Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a modeling workbench. Viewport on the left, a feature-tree style operation list on the right; stacks on phones. */
+:root{
+  --bg:#eef1f4;--panel:#ffffff;--stage:#e4e9ef;--ink:#17202b;--muted:#566271;--line:#d3dae2;
+  --accent:#2c6bd3;--accent-soft:#dde8fa;
+  --f-display:"Archivo",system-ui,sans-serif;--f-body:"Archivo",system-ui,sans-serif;--f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1318;--panel:#151c24;--stage:#1a222c;--ink:#e5eaf0;--muted:#94a1b0;--line:#263240;--accent:#6ea3ff;--accent-soft:#1d2d47;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1318;--panel:#151c24;--stage:#1a222c;--ink:#e5eaf0;--muted:#94a1b0;--line:#263240;--accent:#6ea3ff;--accent-soft:#1d2d47;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.wrap{max-width:1200px;margin:0 auto;padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+h1{font-family:var(--f-display);font-stretch:72%;font-weight:700;font-size:clamp(30px,5vw,46px);line-height:1;letter-spacing:-0.01em;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:60ch;margin:8px 0 0}
+.count{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:0.04em}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px;align-items:start}
+.view{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:12px;min-width:0}
+.ophead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.ophead h2{font-family:var(--f-display);font-stretch:85%;font-weight:600;font-size:24px;margin:0}
+.lvl{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+#td{color:var(--muted);margin:0;width:100%}
+#st{font-family:var(--f-mono);font-size:12px;padding:2px 8px;border-radius:4px;background:var(--accent-soft);color:var(--accent)}
+#vw{height:440px;background:var(--stage);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:grab;touch-action:none;position:relative}
+#vw:active{cursor:grabbing}
+.hint{position:absolute;right:10px;bottom:8px;font-family:var(--f-mono);font-size:11px;color:var(--muted);pointer-events:none}
+.ctrl{display:flex;align-items:center;gap:12px}
+.ctrl button{font:inherit;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:6px 12px;cursor:pointer;min-width:72px}
+.ctrl input{flex:1;accent-color:var(--accent)}
+#pc{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.tree{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 0 10px;min-width:0}
+.tier{font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);padding:12px 16px 4px}
+.grp{font-size:12px;font-weight:600;color:var(--muted);padding:8px 16px 2px;font-stretch:90%}
+.tree a{display:block;padding:5px 16px 5px 26px;color:var(--ink);text-decoration:none;font-size:14px;border-left:2px solid transparent}
+.tree a:hover{background:var(--stage)}
+.tree a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tree a.on{border-left-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.uses{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%;font-size:12px;color:var(--muted)}
+.uses button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--accent);border-radius:999px;padding:2px 10px;cursor:pointer}
+.uses button:hover{border-color:var(--accent)}
+footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:820px){.bench{grid-template-columns:minmax(0,1fr)}.view{position:static}#vw{height:340px}.tree{columns:2;column-gap:0}.tier,.grp{break-after:avoid}.tree a{break-inside:avoid}}
+@media (max-width:460px){.tree{columns:1}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>CAD Operations Atlas</h1>
+      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. It opens on a worked example, a 6'0" shortboard built in ten steps. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
+    </div>
+    <span class="count" id="count"></span>
+  </header>
+
+  <div class="bench">
+    <section class="view" aria-label="Operation viewer">
+      <div class="ophead">
+        <h2 id="tn">Extrude</h2><span class="lvl" id="lv">Basics</span><span id="st" hidden></span>
+        <p id="td">Push a 2D profile straight out</p>
+        <div class="uses" id="uses" hidden></div>
+      </div>
+      <div id="vw"><span class="hint">Drag to rotate</span></div>
+      <div class="ctrl">
+        <button id="pb" type="button">Pause</button>
+        <input type="range" id="sl" min="0" max="100" step="1" value="0" aria-label="Operation progress">
+        <span id="pc">0%</span>
+        <button id="nx" type="button" hidden>Next step</button>
+      </div>
+      <div class="legend">
+        <span><span class="sw" style="background:#E24B4A"></span>Input sketch, tool, or scan</span>
+        <span><span class="sw" style="background:#EF9F27"></span>Live preview</span>
+        <span><span class="sw" style="background:#378ADD"></span>Finished feature</span>
+        <span><span class="sw" style="background:#B4B2A9"></span>Existing geometry</span>
+        <span><span class="sw" style="background:#97C459"></span>Added patch</span>
+        <span><span class="sw" style="background:#7F77DD"></span>Control cage</span>
+      </div>
+    </section>
+    <nav class="tree" id="tree" aria-label="Operations"></nav>
+  </div>
+
+  <footer>Simplified schematic previews for learning. Names follow SOLIDWORKS terms; most CAD tools have the same operations under similar names. Each operation has its own link: add its name after # in the address, for example #loft.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const T3=THREE,PI=Math.PI,V=(x,y,z)=>new T3.Vector3(x,y,z),DS=T3.DoubleSide;
+const MS=o=>new T3.MeshStandardMaterial(Object.assign({side:DS,roughness:0.55,metalness:0.05},o));
+const MAT={prev:MS({color:0xEF9F27,transparent:true,opacity:0.55,depthWrite:false}),res:MS({color:0x378ADD}),base:MS({color:0xB4B2A9,roughness:0.75}),patch:MS({color:0x97C459}),tool:MS({color:0xE24B4A,transparent:true,opacity:0.28,depthWrite:false}),ghost:MS({color:0x888780,transparent:true,opacity:0.14,depthWrite:false}),mold:MS({color:0x888780,transparent:true,opacity:0.3,depthWrite:false}),pt:MS({color:0xE24B4A}),vc:MS({vertexColors:true,roughness:0.6})};
+MAT.zebra=new T3.ShaderMaterial({side:DS,vertexShader:'varying vec3 vN;varying vec3 vW;void main(){vN=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.0);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}',fragmentShader:'varying vec3 vN;varying vec3 vW;void main(){vec3 v=normalize(vW-cameraPosition);vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;vec3 r=reflect(v,n);float s=step(0.5,fract(r.y*5.0+r.x*0.6));gl_FragColor=vec4(mix(vec3(0.1),vec3(0.96),s),1.0);}'});
+const DASH=new T3.LineDashedMaterial({color:0xE24B4A,dashSize:0.09,gapSize:0.06});
+const AXM=new T3.LineDashedMaterial({color:0x888780,dashSize:0.14,gapSize:0.06});
+const CAGE=new T3.LineBasicMaterial({color:0x7F77DD});
+const EB=new T3.LineBasicMaterial({color:0x0C447C,transparent:true,opacity:0.55});
+const EG=new T3.LineBasicMaterial({color:0x5F5E5A,transparent:true,opacity:0.6});
+let T=0,G=null;
+const R=()=>T<1?MAT.prev:MAT.res,cl=x=>Math.min(1,Math.max(0,x));
+function M(geo,mat,edges=true){const m=new T3.Mesh(geo,mat);if(edges)m.add(new T3.LineSegments(new T3.EdgesGeometry(geo,30),mat===MAT.base?EG:EB));G.add(m);return m;}
+function L(pts,mat=DASH,closed=false){const p=closed?[...pts,pts[0]]:pts;const l=new T3.Line(new T3.BufferGeometry().setFromPoints(p),mat);l.computeLineDistances();G.add(l);return l;}
+function LS(geo,mat=DASH){const l=new T3.LineSegments(new T3.EdgesGeometry(geo,30),mat);l.computeLineDistances();geo.dispose();G.add(l);return l;}
+function shp(a){const s=new T3.Shape();a.forEach((p,i)=>i?s.lineTo(p[0],p[1]):s.moveTo(p[0],p[1]));return s;}
+function grid(rows,wrap=false){if(rows.length<2)return null;const r=rows.length,c=rows[0].length,pos=[],idx=[];rows.forEach(row=>row.forEach(p=>pos.push(p.x,p.y,p.z)));const cc=wrap?c:c-1;for(let i=0;i<r-1;i++)for(let j=0;j<cc;j++){const a=i*c+j,b=i*c+(j+1)%c,d=(i+1)*c+j,e=(i+1)*c+(j+1)%c;idx.push(a,d,b,b,d,e);}const g=new T3.BufferGeometry();g.setAttribute('position',new T3.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g;}
+function rowsOf(S,u0,u1,nu,nv){const out=[];for(let i=0;i<=nu;i++){const u=u0+(u1-u0)*i/nu,row=[];for(let j=0;j<=nv;j++)row.push(S(u,j/nv));out.push(row);}return out;}
+function surf(S,u0,u1,mat,nu=30,nv=20){if(u1-u0<0.005)return;const g=grid(rowsOf(S,u0,u1,nu,nv));if(g)M(g,mat,false);}
+function crv(f,n=60){const p=[];for(let i=0;i<=n;i++)p.push(f(i/n));return p;}
+function tube(pts,r,segs,t,mat,rad=12){const g=new T3.TubeGeometry(new T3.CatmullRomCurve3(pts),segs,r,rad,false);g.setDrawRange(0,Math.floor(segs*t)*rad*6);return M(g,mat,false);}
+function slab(top,bot,mat){const nu=top.length-1,nv=top[0].length-1;[top,bot,[top[0],bot[0]],[top[nu],bot[nu]],[top.map(r=>r[0]),bot.map(r=>r[0])],[top.map(r=>r[nv]),bot.map(r=>r[nv])]].forEach(g=>M(grid(g),mat,false));}
+function thick(S,th,mat){const top=rowsOf(S,0,1,30,16);slab(top,top.map(r=>r.map(p=>V(p.x,p.y-th,p.z))),mat);}
+function Lbody(corner){const s=shp([[-1,-0.6],[1,-0.6],[1,-0.3],...corner,[-0.7,0.6],[-1,0.6]]);const g=new T3.ExtrudeGeometry(s,{depth:1.4,bevelEnabled:false,curveSegments:16});g.translate(0,0,-0.7);M(g,R());L([V(-0.7,-0.3,-0.75),V(-0.7,-0.3,0.75)]);}
+function arrowUp(y0,len){L([V(0,y0,0),V(0,y0+len,0)],EG);const c=new T3.ConeGeometry(0.06,0.16,12);c.translate(0,y0+len+0.06,0);M(c,MAT.base,false);}
+let s0=7;const rnd=()=>(s0=(s0*16807)%2147483647)/2147483647;
+const SCS=(u,v)=>V(3*u-1.5,0.3*Math.sin(1.5*PI*u)*Math.cos(PI*(v-0.5))+0.05,1.6*v-0.8);
+const SCAN=[];for(let i=0;i<650;i++){const p=SCS(rnd(),rnd());p.y+=(rnd()-0.5)*0.06;SCAN.push(p);}
+const B='Basics',A='Advanced';
+const OPS=[
+[B,"Solid features","Extrude","Push a 2D profile straight out",t=>{const s=shp([[-1,-0.6],[1,-0.6],[1,0.6],[0.2,0.6],[0.2,0],[-1,0]]);L(s.getPoints().map(p=>V(p.x,-0.5,-p.y)),DASH,true);if(t>0.01){const g=new T3.ExtrudeGeometry(s,{depth:t*1.1,bevelEnabled:false});g.rotateX(-PI/2);g.translate(0,-0.5,0);M(g,R());}}],
+[B,"Solid features","Revolve","Spin a profile around an axis",t=>{const pr=[[0,-0.8],[0.8,-0.8],[0.8,-0.6],[0.35,-0.4],[0.35,0.5],[0.6,0.7],[0.6,0.8],[0,0.8]].map(p=>new T3.Vector2(p[0],p[1]));L(pr.map(p=>V(0,p.y,p.x+0.003)));L([V(0,-1.2,0),V(0,1.2,0)],AXM);if(t>0.01)M(new T3.LatheGeometry(pr,64,0,t*2*PI),R());}],
+[B,"Solid features","Sweep","Move a profile along a path",t=>{const pts=[V(-1.5,-0.5,0.5),V(-0.6,-0.5,0.5),V(0.2,0.1,-0.1),V(1,0.8,-0.7),V(1.5,1,-0.2)];L(new T3.CatmullRomCurve3(pts).getPoints(80));L(crv(u=>V(-1.5,-0.5+0.22*Math.sin(u*2*PI),0.5+0.22*Math.cos(u*2*PI)),40));tube(pts,0.2,90,t,R(),16);}],
+[B,"Solid features","Loft","Blend between several profiles",t=>{const n=48,sec=(sq,x,s)=>{const a=[];for(let j=0;j<n;j++){const q=2*PI*j/n,c=Math.cos(q),si=Math.sin(q),k=sq?1/Math.max(Math.abs(c),Math.abs(si)):1;a.push(V(x,s*k*si,s*k*c));}return a;};const A1=sec(0,-1.3,0.7),B1=sec(0,0,0.4),C1=sec(1,1.3,0.45);[A1,B1,C1].forEach(s=>L(s,DASH,true));if(t<0.02)return;const rows=[],N=40;for(let i=0;i<=N;i++){const u=t*i/N,P=u<=0.5?[A1,B1,u/0.5]:[B1,C1,(u-0.5)/0.5];rows.push(P[0].map((p,j)=>p.clone().lerp(P[1][j],P[2])));}M(grid(rows,true),R(),false);}],
+[B,"Solid features","Shell","Hollow a solid to a wall thickness",t=>{const d=t*0.88,w=0.1;const b=new T3.BoxGeometry(2,1-d,1.4);b.translate(0,-0.5+(1-d)/2,0);M(b,R());if(d>0.01){[[2,d,w,0,0.7-w/2],[2,d,w,0,-0.7+w/2],[w,d,1.4-2*w,1-w/2,0],[w,d,1.4-2*w,-1+w/2,0]].forEach(q=>{const g=new T3.BoxGeometry(q[0],q[1],q[2]);g.translate(q[0]===w?q[3]:0,0.5-d/2,q[0]===w?0:q[4]);M(g,R());});}L([V(-1,0.51,-0.7),V(1,0.51,-0.7),V(1,0.51,0.7),V(-1,0.51,0.7)],DASH,true);}],
+[B,"Solid features","Fillet","Round an edge with a radius",t=>{const r=t*0.5;if(r<0.01)return Lbody([[-0.7,-0.3]]);const cx=-0.7+r,cy=-0.3+r,a=[];for(let k=0;k<=12;k++){const q=-PI/2-(PI/2)*k/12;a.push([cx+r*Math.cos(q),cy+r*Math.sin(q)]);}Lbody(a);}],
+[B,"Solid features","Chamfer","Bevel an edge at an angle",t=>{const c=t*0.45;Lbody(c<0.01?[[-0.7,-0.3]]:[[-0.7+c,-0.3],[-0.7,-0.3+c]]);}],
+[B,"Solid features","Draft","Taper faces so parts leave a mold",t=>{const o=new T3.CylinderGeometry(1,1,1.2,4,1);o.rotateY(PI/4);LS(o);const g=new T3.CylinderGeometry(1-0.35*t,1,1.2,4,1);g.rotateY(PI/4);M(g,R());}],
+[B,"Solid features","Rib","Thin support wall from a sketch line",t=>{const p=new T3.BoxGeometry(2,0.15,1.2);p.translate(0,-0.6,0);M(p,MAT.base);const w=new T3.BoxGeometry(0.15,1.2,1.2);w.translate(-0.925,0.075,0);M(w,MAT.base);L([V(-0.85,0.575,0.08),V(0.65,-0.525,0.08)]);if(t>0.01){const s=shp([[-0.85,-0.525],[-0.85+1.5*t,-0.525],[-0.85,-0.525+1.1*t]]);const g=new T3.ExtrudeGeometry(s,{depth:0.1,bevelEnabled:false});g.translate(0,0,-0.05);M(g,R());}}],
+[B,"Solid features","Cut and hole","Remove material, add standard holes",t=>{const s=shp([[-1,-0.7],[1,-0.7],[1,0.7],[-1,0.7]]);const r=0.35*t;if(r>0.01){const h=new T3.Path();h.absarc(0,0,r,0,2*PI,true);s.holes.push(h);}const g=new T3.ExtrudeGeometry(s,{depth:0.7,bevelEnabled:false,curveSegments:32});g.rotateX(-PI/2);g.translate(0,-0.35,0);M(g,R());L(crv(u=>V(0.35*Math.cos(u*2*PI),0.37,0.35*Math.sin(u*2*PI)),48));const c=new T3.CylinderGeometry(0.35,0.35,1.2,32,1,true);c.translate(0,0.9-t*0.9,0);M(c,MAT.tool,false);}],
+[B,"Curves","3D spline","Freeform curve through points in space",t=>{const pts=[V(-1.4,0,0.6),V(-0.6,0.9,-0.4),V(0.2,-0.3,0.3),V(0.9,0.7,0.8),V(1.4,0.2,-0.5)];L(pts,AXM);pts.forEach(p=>{const g=new T3.SphereGeometry(0.06,12,8);g.translate(p.x,p.y,p.z);M(g,MAT.pt,false);});tube(pts,0.035,120,t,R(),8);}],
+[B,"Curves","Projected curve","Combine two 2D sketches into one 3D curve",t=>{const f=x=>0.22*x*x-0.4,h=x=>0.7*Math.cos(x*PI/3.4);const p1=new T3.PlaneGeometry(3.4,2);p1.rotateX(-PI/2);p1.translate(0,-0.9,0);M(p1,MAT.ghost,false);const p2=new T3.PlaneGeometry(3.4,1.8);p2.translate(0,0.1,-1);M(p2,MAT.ghost,false);L(crv(u=>{const x=3*u-1.5;return V(x,-0.9,h(x));}));L(crv(u=>{const x=3*u-1.5;return V(x,f(x),-1);}));tube(crv(u=>{const x=3*u-1.5;return V(x,f(x),h(x));},30),0.035,100,t,R(),8);}],
+[B,"Curves","Helix","Path for springs and threads",t=>{L([V(0,-1.1,0),V(0,1.1,0)],AXM);tube(crv(u=>{const q=u*8*PI;return V(0.6*Math.cos(q),-0.8+1.6*u,0.6*Math.sin(q));},200),0.05,300,t,R(),8);}],
+[B,"Curves","Split line","Divide a face along a curve",t=>{M(new T3.BoxGeometry(2,1,1.4),MAT.base);L(crv(u=>{const x=2*u-1;return V(x,0.25*Math.sin(x*PI),1.3);}));tube(crv(u=>{const x=2*u-1;return V(x,0.25*Math.sin(x*PI),0.71);},30),0.025,80,t,R(),8);}],
+[B,"Surfaces","Boundary surface","Surface from curves in two directions",t=>{const S=(u,v)=>V(3*u-1.5,0.25*Math.sin(PI*u)*(1+v)+0.3*Math.sin(PI*v)*(1-u)-0.2,1.6*v-0.8);[0,1].forEach(k=>{L(crv(u=>S(u,k)));L(crv(v=>S(k,v)));});surf(S,0,t,R(),Math.max(2,Math.round(30*t)));}],
+[B,"Surfaces","Fill surface","Patch a hole with tangent edges",t=>{const P=(r,a)=>V(r*Math.cos(a),0.5*(1-(r/1.5)**2)-0.2,0.8*r*Math.sin(a));const rows=(r0,r1)=>{const out=[];for(let i=0;i<=12;i++){const r=r0+(r1-r0)*i/12,row=[];for(let j=0;j<48;j++)row.push(P(r,2*PI*j/48));out.push(row);}return out;};M(grid(rows(0.5,1.5),true),MAT.base,false);L(crv(u=>P(0.5,u*2*PI),48));if(t>0.02)M(grid(rows(0.5*(1-t),0.5),true),T<1?MAT.prev:MAT.patch,false);}],
+[B,"Surfaces","Offset surface","Copy a face at a set distance",t=>{const S=(u,v)=>V(3*u-1.5,0.15*Math.sin(2*PI*u)+0.25*Math.cos(PI*(v-0.5))-0.5,1.6*v-0.8);surf(S,0,1,MAT.base);const d=t*0.7;surf((u,v)=>S(u,v).add(V(0,d,0)),0,1,R());[[0,0],[1,0],[0,1],[1,1]].forEach(c=>{const p=S(c[0],c[1]);L([p,p.clone().add(V(0,d,0))]);});}],
+[B,"Surfaces","Ruled surface","Straight flange off an edge",t=>{const b=new T3.BoxGeometry(2,0.6,1.2);b.translate(0,0.3,0);M(b,MAT.base);L([V(-1,0,0.62),V(1,0,0.62)]);if(t>0.01){const dir=V(0,-0.5,0.866).multiplyScalar(0.9*t);M(grid([[V(-1,0,0.6),V(1,0,0.6)],[V(-1,0,0.6).add(dir),V(1,0,0.6).add(dir)]]),R(),false);}}],
+[B,"Surfaces","Extend surface","Grow a surface past its edge",t=>{const S=(u,v)=>V(3*u-1.5,0.5*Math.sin(PI*u*0.9)-0.2,1.4*v-0.7);surf(S,0,0.5,MAT.base,15);L(crv(v=>S(0.5,v)));surf(S,0.5,0.5+0.5*t,R(),Math.max(2,Math.round(15*t)));}],
+[B,"Surfaces","Trim surface","Cut a surface with another curve",t=>{const s=shp([[-1.4,-0.9],[1.4,-0.9],[1.4,0.9],[-1.4,0.9]]);const h=new T3.Path();h.absarc(0,0,0.5,0,2*PI,true);s.holes.push(h);const g=new T3.ShapeGeometry(s,32);g.rotateX(-PI/2);M(g,R());L(crv(u=>V(0.5*Math.cos(u*2*PI),0.01,0.5*Math.sin(u*2*PI)),48));const c=new T3.CircleGeometry(0.5,48);c.rotateX(-PI/2);c.translate(0,t*0.9,0);const m=M(c,MAT.tool,false);m.visible=t<0.99;}],
+[B,"Surfaces","Knit surface","Join surfaces, optionally into a solid",t=>{const S=(u,v)=>V(3*u-1.5,0.35*Math.sin(PI*u)*Math.cos(PI*(v-0.5))-0.2,1.4*v-0.7),gap=(1-t)*0.45,mat=T<1?MAT.base:MAT.res;surf((u,v)=>S(u,v).add(V(-gap,0,0)),0,0.5,mat,15);surf((u,v)=>S(u,v).add(V(gap,0,0)),0.5,1,mat,15);L(crv(v=>S(0.5,v).add(V(-gap,0.01,0))));L(crv(v=>S(0.5,v).add(V(gap,0.01,0))));}],
+[B,"Surfaces","Thicken","Turn a surface into a solid",t=>{const S=(u,v)=>V(3*u-1.5,0.3*Math.sin(PI*u)+0.15*Math.sin(2*PI*v)-0.1,1.4*v-0.7);const th=0.4*t;[0,1].forEach(k=>{L(crv(u=>S(u,k)));L(crv(v=>S(k,v)));});if(th<0.01)surf(S,0,1,MAT.base);else thick(S,th,R());}],
+[B,"Bodies and patterns","Mirror","Copy features across a plane",t=>{const s=shp([[0,-0.6],[1.2,-0.6],[1.2,-0.3],[0.5,0.2],[0.5,0.7],[0,0.7]]);const g=new T3.ExtrudeGeometry(s,{depth:1,bevelEnabled:false});g.translate(0,0,-0.5);M(g,MAT.base);const pl=new T3.PlaneGeometry(1.8,1.8);pl.rotateY(PI/2);M(pl,MAT.ghost,false);if(t>0.01){const m=M(g.clone(),R());m.scale.x=-t;}}],
+[B,"Bodies and patterns","Linear pattern","Repeat along a direction",t=>{M(new T3.BoxGeometry(0.5,0.5,0.5),MAT.base).position.x=-1.2;L([V(-1.5,-0.4,0.45),V(1.6,-0.4,0.45)]);for(let k=1;k<=3;k++){const s=cl((t-(k-1)/3)*3);if(s>0.01){const m=M(new T3.BoxGeometry(0.5,0.5,0.5),R());m.position.x=-1.2+0.8*k;m.scale.setScalar(s);}}}],
+[B,"Bodies and patterns","Circular pattern","Repeat around an axis",t=>{M(new T3.CylinderGeometry(0.35,0.35,0.35,32),MAT.base);L([V(0,-1,0),V(0,1,0)],AXM);for(let k=0;k<6;k++){const s=k===0?1:cl((t-(k-1)/5)*5);if(s<0.01)continue;const g=new T3.BoxGeometry(0.8,0.06,0.3);g.rotateX(0.4);g.translate(0.75,0,0);const m=M(g,k===0?MAT.base:R());m.rotation.y=k*PI/3;m.scale.setScalar(s);}}],
+[B,"Bodies and patterns","Combine","Add, subtract, or intersect bodies",t=>{const mat=T<1?MAT.base:MAT.res;const b=M(new T3.BoxGeometry(1.4,0.9,0.9),mat);b.position.x=-0.3;const s=M(new T3.SphereGeometry(0.6,40,20),T<1?MAT.tool:MAT.res,false);s.position.x=0.6+(1-t)*1.2;}],
+[B,"Bodies and patterns","Split body","Cut one body into several",t=>{[-1,1].forEach(k=>{const m=M(new T3.BoxGeometry(1,0.8,1.2),R());m.position.x=k*(0.5+0.25*t);});const p=new T3.PlaneGeometry(1.6,1.4);p.rotateY(PI/2);const m=M(p,MAT.tool,false);m.visible=t<0.99;}],
+[B,"Bodies and patterns","Wrap","Emboss a sketch onto a curved face",t=>{M(new T3.CylinderGeometry(0.7,0.7,1.6,48),MAT.base);L([V(-0.48,-0.25,1.25),V(0.48,-0.25,1.25),V(0.48,0.25,1.25),V(-0.48,0.25,1.25)],DASH,true);if(t>0.01){const r=0.703+0.07*t;M(new T3.CylinderGeometry(r,r,0.5,24,1,false,-0.7*t,1.4*t),T<1?MAT.prev:MAT.patch);}}],
+[B,"Bodies and patterns","Flex","Bend, twist, or stretch a shape",t=>{const o=new T3.BoxGeometry(2.6,0.25,0.5);o.translate(0,-0.3,0);LS(o);const g=new T3.BoxGeometry(2.6,0.25,0.5,60,1,1),An=t*PI*0.7;if(An>0.001){const Rr=2.6/An,p=g.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),q=x/Rr;p.setXY(i,(Rr-y)*Math.sin(q),Rr-(Rr-y)*Math.cos(q));}g.computeVertexNormals();}g.translate(0,-0.3,0);M(g,R());}],
+[A,"Advanced features","Variable-radius fillet","Radius changes along the edge",t=>{const prof=r=>{r=Math.max(r,0.005);const cx=-0.7+r,cy=-0.3+r,a=[[-1,-0.6],[1,-0.6],[1,-0.3]];for(let k=0;k<=12;k++){const q=-PI/2-(PI/2)*k/12;a.push([cx+r*Math.cos(q),cy+r*Math.sin(q)]);}a.push([-0.7,0.6],[-1,0.6]);return a;};const rf=i=>t*(0.05+0.45*i/24),N=24,P=[];for(let i=0;i<=N;i++)P.push(prof(rf(i)).map(p=>V(p[0],p[1],-0.7+1.4*i/N)));[[0,1],[1,2],[2,3],[3,15],[15,16],[16,17],[17,18]].forEach(([a,b])=>{M(grid(P.map(row=>{const out=[];for(let j=a;j<=b;j++)out.push(row[j%18]);return out;})),R(),false);});[[0,-0.7],[N,0.7]].forEach(([i,z])=>{const g=new T3.ShapeGeometry(shp(prof(rf(i))));g.translate(0,0,z);M(g,R());});L([V(-0.7,-0.3,-0.75),V(-0.7,-0.3,0.75)]);return t>0.02?'R '+(t*0.05).toFixed(2)+' to '+(t*0.5).toFixed(2):'';}],
+[A,"Advanced features","Twisted sweep","Profile rotates as it travels the path",t=>{const c=new T3.CatmullRomCurve3([V(-1.5,-0.3,0),V(-0.5,0.15,0.35),V(0.5,-0.15,-0.35),V(1.5,0.3,0)]);L(c.getPoints(60));const cr=[[-0.32,-0.1],[0.32,-0.1],[0.32,0.1],[-0.32,0.1]],pr=[];for(let s=0;s<4;s++)for(let k=0;k<4;k++){const a=cr[s],b=cr[(s+1)%4];pr.push([a[0]+(b[0]-a[0])*k/4,a[1]+(b[1]-a[1])*k/4]);}const rows=[];for(let i=0;i<=70;i++){const u=i/70,P=c.getPointAt(u),Tg=c.getTangentAt(u),Bn=new T3.Vector3().crossVectors(Tg,V(0,1,0)).normalize(),Nn=new T3.Vector3().crossVectors(Bn,Tg),q=t*PI*u,cs=Math.cos(q),sn=Math.sin(q);rows.push(pr.map(p=>P.clone().addScaledVector(Bn,p[0]*cs-p[1]*sn).addScaledVector(Nn,p[0]*sn+p[1]*cs)));}M(grid(rows,true),R(),false);return 'Twist '+Math.round(t*180)+'°';}],
+[A,"Advanced features","Loft with guide curves","Guide curves control the shape between sections",t=>{const rr=u=>0.3+0.35*Math.sin(PI*u),cy=u=>0.25*Math.sin(PI*u)-0.1,X=u=>2.8*u-1.4;[0,1].forEach(u=>L(crv(a=>V(X(u),cy(u)+rr(u)*Math.sin(a*2*PI),rr(u)*Math.cos(a*2*PI)),40)));L(crv(u=>V(X(u),cy(u)+rr(u),0)));L(crv(u=>V(X(u),cy(u)-rr(u),0)));L(crv(u=>V(X(u),cy(u),rr(u))));if(t<0.02)return;const rows=[];for(let i=0;i<=40;i++){const u=t*i/40,row=[];for(let j=0;j<48;j++){const a=2*PI*j/48;row.push(V(X(u),cy(u)+rr(u)*Math.sin(a),rr(u)*Math.cos(a)));}rows.push(row);}M(grid(rows,true),R(),false);}],
+[A,"Advanced features","Modeled thread","Triangle profile swept along a helix",t=>{M(new T3.CylinderGeometry(0.42,0.42,2,40),MAT.base);L([V(0,-1.2,0),V(0,1.2,0)],AXM);tube(crv(u=>{const q=u*9*2*PI;return V(0.46*Math.cos(q),-0.85+1.7*u,0.46*Math.sin(q));},500),0.075,700,t,R(),3);}],
+[A,"Advanced features","Dome","Bulge a face into a smooth cap",t=>{const b=new T3.BoxGeometry(2,0.8,1.4);b.translate(0,-0.2,0);M(b,MAT.base);L([V(-1,0.21,-0.7),V(1,0.21,-0.7),V(1,0.21,0.7),V(-1,0.21,0.7)],DASH,true);if(t>0.01)M(grid(rowsOf((u,v)=>V(2*u-1,0.2+0.55*t*Math.sin(PI*u)*Math.sin(PI*v),1.4*v-0.7),0,1,30,24)),R(),false);}],
+[A,"Advanced features","Cut with surface","A curved surface slices the solid",t=>{const F=(u,v)=>{const x=2*u-1,z=1.4*v-0.7;return V(x,0.15*Math.sin(2.5*x)+0.1*Math.cos(3*z),z);};const top=rowsOf(F,0,1,30,20);slab(top,rowsOf((u,v)=>V(2*u-1,-0.6,1.4*v-0.7),0,1,30,20),R());if(t<0.99){const d=t*0.9;slab(rowsOf((u,v)=>V(2*u-1,0.6+d,1.4*v-0.7),0,1,30,20),top.map(r=>r.map(p=>p.clone().add(V(0,d,0)))),MAT.tool);}[0,1].forEach(k=>{L(crv(u=>F(u,k)));L(crv(v=>F(k,v)));});}],
+[A,"Advanced features","Curve-driven pattern","Copies follow and turn with a curve",t=>{const c=new T3.CatmullRomCurve3([V(-1.5,-0.4,0.6),V(-0.6,0.35,-0.5),V(0.4,-0.25,0.5),V(1.5,0.4,-0.3)]);L(c.getPoints(80));for(let k=0;k<=8;k++){const s=k===0?1:cl((t-(k-1)/8)*8);if(s<0.01)continue;const m=M(new T3.BoxGeometry(0.26,0.26,0.12),k===0?MAT.base:R());m.position.copy(c.getPointAt(k/8));m.quaternion.setFromUnitVectors(V(1,0,0),c.getTangentAt(k/8));m.scale.setScalar(s);}}],
+[A,"Freeform and analysis","Subdivision cage","Pull a control cage, the smooth body follows",t=>{const g=new T3.SphereGeometry(1,56,36),p=g.attributes.position,f=(a,e,s)=>Math.sign(a)*Math.pow(Math.abs(a),e)*s;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);const X=f(x,0.45,1.1),Z=f(z,0.45,0.8);let Y=f(y,0.45,0.6);Y+=0.85*t*Math.exp(-(X*X+Z*Z)/0.3)*Math.max(0,y);p.setXYZ(i,X,Y,Z);}g.computeVertexNormals();M(g,R(),false);const C=(i,j,k)=>{const v=V(1.3*i,j?0.78:-0.78,1*k);if(j&&!i&&!k)v.y+=0.95*t;return v;};[0,1].forEach(j=>{[-1,0,1].forEach(k=>L([-1,0,1].map(i=>C(i,j,k)),CAGE));[-1,0,1].forEach(i=>L([-1,0,1].map(k=>C(i,j,k)),CAGE));});[-1,0,1].forEach(i=>[-1,0,1].forEach(k=>{if(i||k)L([C(i,0,k),C(i,1,k)],CAGE);}));const s=new T3.SphereGeometry(0.06,12,8);const c=C(0,1,0);s.translate(c.x,c.y,c.z);M(s,MAT.pt,false);}],
+[A,"Freeform and analysis","Zebra stripes","Reflections reveal G0, G1, and G2 continuity",t=>{const k=x=>t<0.5?(1-t/0.5)*0.4*x+(t/0.5)*0.267*x*x:(1-(t-0.5)/0.5)*0.267*x*x+((t-0.5)/0.5)*0.178*x*x*x;const S=(x,v)=>V(x,(x>0?k(x):0)+0.15*Math.cos(PI*(v-0.5))-0.5,1.6*v-0.8);M(grid(rowsOf((u,v)=>S(-1.5+1.5*u,v),0,1,30,24)),MAT.zebra,false);M(grid(rowsOf((u,v)=>S(1.5*u,v),0,1,40,24)),MAT.zebra,false);L(crv(v=>S(0,v).add(V(0,0.01,0))));return t<0.04?'G0: crease':Math.abs(t-0.5)<0.04?'G1: tangent':t>0.96?'G2: curvature continuous':'Blending';}],
+[A,"Freeform and analysis","Curvature map","Color shows how sharply the surface bends",t=>{const Am=0.15+0.5*t,f=(x,z)=>Am*(Math.exp(-((x-0.6)**2+z*z)/0.15)-0.6*Math.exp(-((x+0.7)**2+(z-0.2)**2)/0.3));const rows=rowsOf((u,v)=>{const x=3*u-1.5,z=1.6*v-0.8;return V(x,f(x,z)-0.4,z);},0,1,60,34);const g=grid(rows),col=[],h=0.02,cg=new T3.Color(0x97C459),cb=new T3.Color(0x378ADD),cr=new T3.Color(0xE24B4A);rows.forEach(r=>r.forEach(p=>{const x=p.x,z=p.z,lap=(f(x+h,z)+f(x-h,z)+f(x,z+h)+f(x,z-h)-4*f(x,z))/(h*h);const c=Math.max(-1,Math.min(1,-lap/9));const cc=cg.clone().lerp(c>0?cr:cb,Math.abs(c));col.push(cc.r,cc.g,cc.b);}));g.setAttribute('color',new T3.Float32BufferAttribute(col,3));M(g,MAT.vc,false);}],
+[A,"Freeform and analysis","Draft analysis","Green pulls free, amber has no draft, red undercuts",t=>{const a=t*8*PI/180,g0=new T3.CylinderGeometry(1-1.697*Math.tan(a),1,1.2,4,1);g0.rotateY(PI/4);const g=g0.toNonIndexed();g0.dispose();g.computeVertexNormals();const n=g.attributes.normal,col=[],cg=new T3.Color(0x97C459),ca=new T3.Color(0xEF9F27),cr=new T3.Color(0xE24B4A);for(let i=0;i<n.count;i++){const y=n.getY(i),c=y>0.017?cg:y<-0.017?cr:ca;col.push(c.r,c.g,c.b);}g.setAttribute('color',new T3.Float32BufferAttribute(col,3));M(g,MAT.vc);arrowUp(0.75,0.5);return 'Draft '+(t*8).toFixed(1)+'°';}],
+[A,"Freeform and analysis","Scan to surface","Fit clean surfaces to 3D scan data",t=>{const g=new T3.BufferGeometry().setFromPoints(SCAN);G.add(new T3.Points(g,new T3.PointsMaterial({color:0xE24B4A,size:0.035})));if(t>0.02)M(grid(rowsOf(SCS,0,t,Math.max(2,Math.round(40*t)),24)),R(),false);}],
+[A,"Industry tools","Sheet metal bend","Flanges fold up from a flat blank",t=>{const An=Math.max(0.02,t*PI/2),Rr=0.12,right=[[0,0],[0.7,0]];for(let k=1;k<=10;k++){const q=An*k/10;right.push([0.7+Rr*Math.sin(q),Rr-Rr*Math.cos(q)]);}const E=right[right.length-1];right.push([E[0]+0.55*Math.cos(An),E[1]+0.55*Math.sin(An)]);const full=right.slice(1).reverse().map(p=>[-p[0],p[1]]).concat(right),n=full.length,up=[],lo=[];for(let i=0;i<n;i++){const a=full[Math.max(0,i-1)],b=full[Math.min(n-1,i+1)];let tx=b[0]-a[0],ty=b[1]-a[1];const l=Math.hypot(tx,ty);tx/=l;ty/=l;up.push([full[i][0]-ty*0.03,full[i][1]+tx*0.03]);lo.push([full[i][0]+ty*0.03,full[i][1]-tx*0.03]);}const g=new T3.ExtrudeGeometry(shp(up.concat(lo.reverse())),{depth:1.2,bevelEnabled:false});g.translate(0,-0.3,-0.6);M(g,R());[-0.7,0.7].forEach(x=>L([V(x,-0.26,-0.62),V(x,-0.26,0.62)]));return 'Bend '+Math.round(An*180/PI)+'°';}],
+[A,"Industry tools","Weldment frame","Structural members placed along sketch lines",t=>{const c=[[-1.2,-0.7],[1.2,-0.7],[1.2,0.7],[-1.2,0.7]],segs=[];for(let i=0;i<4;i++){const a=c[i],b=c[(i+1)%4];segs.push([V(a[0],0.5,a[1]),V(b[0],0.5,b[1])]);}c.forEach(p=>segs.push([V(p[0],0.5,p[1]),V(p[0],-0.95,p[1])]));segs.forEach((s,k)=>{L(s);const f=cl((t-k/8)*8);if(f<0.01)return;const d=s[1].clone().sub(s[0]),len=d.length()*f;const m=M(new T3.BoxGeometry(0.12,0.12,len),R());m.position.copy(s[0].clone().addScaledVector(d,f/2));m.quaternion.setFromUnitVectors(V(0,0,1),d.normalize());});}],
+[A,"Industry tools","Core and cavity","Split a mold block around the part",t=>{const pr=[[0,-0.4],[0.6,-0.4],[0.7,0.4],[0.62,0.4],[0.53,-0.32],[0,-0.32]].map(p=>new T3.Vector2(p[0],p[1]));M(new T3.LatheGeometry(pr,64),MAT.res);const up=new T3.BoxGeometry(2,0.4,1.6);up.translate(0,0.6+0.8*t,0);M(up,MAT.mold);const lo=new T3.BoxGeometry(2,1.2,1.6);lo.translate(0,-0.2-0.45*t,0);M(lo,MAT.mold);L(crv(u=>V(0.7*Math.cos(u*2*PI),0.4,0.7*Math.sin(u*2*PI)),60));}]
+];
+const UM=1.8288/3.4,IN=0.0254;
+const BX=s=>-1.7+3.4*s;
+const BW=s=>0.465*Math.pow(Math.sin(PI*(0.12+0.88*Math.pow(s,0.9))),0.6);
+const BB=s=>0.28*Math.pow(Math.max(0,(s-0.55)/0.45),2.2)+0.07*Math.pow(Math.max(0,(0.45-s)/0.45),2)-0.05;
+const BT=s=>0.118*(0.5+0.5*Math.pow(Math.sin(PI*Math.pow(s,1.1)),1.5));
+const BR=s=>BB(s)+0.35*BT(s),BD=s=>BB(s)+BT(s);
+const ZN=(s,c)=>s<0.1?0.14*c*(1-s/0.1):0;
+function SEC(s,v,c,zs=1){const w=Math.max(BW(s),1e-4),zi=Math.min(ZN(s,c),w*0.9),a=-PI/2+PI*v;let z,y;if(a<0){z=w*Math.pow(Math.max(0,Math.cos(a)),0.4);y=BR(s)+(BR(s)-BB(s))*Math.sin(a);}else{z=w*Math.pow(Math.max(0,Math.cos(a)),1.4);y=BR(s)+(BD(s)-BR(s))*Math.sin(a);}return V(BX(s),y,zs*(zi+(w-zi)*z/w));}
+function half(c,s1,zs,mat){if(s1<0.005||Math.abs(zs)<0.001)return;M(grid(rowsOf((u,v)=>SEC(u,v,c,zs),0,s1,Math.max(2,Math.round(110*s1)),30)),mat,false);M(grid([crv(v=>SEC(0,v,c,zs),30),crv(v=>{const p=SEC(0,v,c,zs);p.z=zs*Math.min(ZN(0,c),BW(0)*0.9);return p;},30)]),mat,false);if(c>0)M(grid(rowsOf((u,v)=>SEC(u,v,c,zs),0,Math.min(0.1,s1),12,1)),mat,false);}
+const board=(c,m,mat)=>{half(c,1,1,mat);half(c,1,-m,mat);};
+const SS=[0.06,0.25,0.48,0.7,0.88];
+const BOARD=(()=>{let vol=0,N=300,wmax=0,tmax=0;for(let i=0;i<N;i++){const s=(i+0.5)/N,p=[];for(let j=0;j<=60;j++)p.push(SEC(s,j/60,1));let S=0;for(let j=0;j<p.length;j++){const a=p[j],b=p[(j+1)%p.length];S+=a.z*b.y-b.z*a.y;}vol+=Math.abs(S)*3.4/N;wmax=Math.max(wmax,BW(s));tmax=Math.max(tmax,BT(s));}return{L:(vol*UM**3*1000).toFixed(1),W:(2*wmax*UM/IN).toFixed(1),T:(tmax*UM/IN).toFixed(1),nose:((BB(1)-BB(0.5))*UM/IN).toFixed(1),tail:((BB(0)-BB(0.5))*UM/IN).toFixed(1)};})();
+function prior(k){if(k>=2)L(crv(s=>V(BX(s),-0.08,BW(s)),120));if(k>=3){L(crv(s=>V(BX(s),BB(s),0),120));L(crv(s=>V(BX(s),BD(s),0),120));}if(k>=4)tube(crv(s=>V(BX(s),BR(s),BW(s)),120),0.01,200,1,MAT.res,6);if(k>=5)SS.forEach(s=>L(crv(v=>SEC(s,v,0),30)));}
+const finGeo=()=>{const g=new T3.ExtrudeGeometry(shp([[0,0],[0.17,0],[0.13,-0.05],[0.06,-0.12],[-0.02,-0.165],[-0.035,-0.155],[-0.01,-0.08]]),{depth:0.008,bevelEnabled:true,bevelThickness:0.003,bevelSize:0.003,bevelSegments:2});g.translate(0,0,-0.004);return g;};
+function fin(s,z,toe,cant,f,mat){if(f<0.01)return;const m=M(finGeo(),mat,false);m.position.set(BX(s),z?BB(s)+0.06*BT(s):BB(s),z);m.rotation.set(cant,toe,0);m.scale.y=f;}
+function fins(fc,fs,mat){const s=0.2,z=BW(s)-0.06;fin(0.12,0,0,0,fc,mat);fin(s,z,0.05,-0.1,fs,mat);fin(s,-z,-0.05,0.1,fs,mat);}
+const DARK=MS({color:0x2C2C2A,roughness:0.8});
+function plug(t){const s=0.13,y=BD(s);if(t>0.5){const g=new T3.CylinderGeometry(0.03,0.03,0.018,24);g.translate(BX(s),y-0.0085,0);M(g,DARK,false);}if(t<0.98){const g=new T3.CylinderGeometry(0.03,0.03,0.4,24);g.translate(BX(s),y+0.2+0.45*(1-cl(t/0.6))-0.01,0);M(g,MAT.tool,false);}}
+const sm=x=>x*x*(3-2*x);
+const EXT='Worked example',EXG='6\'0" shortboard';
+const EXOPS=[
+["1. Outline sketch","Half the plan shape as one spline on the top plane, mirrored later",["3d-spline"],t=>{const p=new T3.PlaneGeometry(3.8,1.2);p.rotateX(-PI/2);p.translate(0,-0.08,0);M(p,MAT.ghost,false);L([V(-1.85,-0.08,0),V(1.85,-0.08,0)],AXM);if(t>0.01)L(crv(u=>{const s=u*t;return V(BX(s),-0.08,BW(s));},120));return '6\'0" long, '+BOARD.W+'" wide';}],
+["2. Rocker and deck line","Bottom rocker and deck curve on the side plane set the thickness flow",["3d-spline"],t=>{prior(2);const p=new T3.PlaneGeometry(3.8,0.8);p.translate(0,0.1,0);M(p,MAT.ghost,false);if(t>0.01){L(crv(u=>{const s=u*t;return V(BX(s),BB(s),0);},120));L(crv(u=>{const s=u*t;return V(BX(s),BD(s),0);},120));}return 'Nose lift '+BOARD.nose+'", tail lift '+BOARD.tail+'"';}],
+["3. Rail curve","Project the outline onto the rocker to get the 3D rail",["projected-curve"],t=>{prior(3);tube(crv(s=>V(BX(s),BR(s),BW(s)),120),0.012,200,t,R(),6);return 'Rail follows outline and rocker';}],
+["4. Cross-sections","Five half-sections on reference planes, pierced to the curves",["loft-with-guide-curves"],t=>{prior(4);SS.forEach((s,k)=>{const f=cl((t-k/5)*5);if(f<0.01)return;const p=new T3.PlaneGeometry(0.7,0.5);p.rotateY(PI/2);p.translate(BX(s),BR(s),0.3);M(p,MAT.ghost,false);L(crv(v=>SEC(s,v*f,0),30));});return 'Section '+Math.max(1,Math.min(5,Math.ceil(t*5)))+' of 5';}],
+["5. Loft the half body","Loft through the sections, guided by rocker, deck, and rail",["loft-with-guide-curves","boundary-surface"],t=>{prior(5);half(0,t,1,R());return 'Half body';}],
+["6. Mirror and knit","Mirror across the stringer plane and knit into one solid",["mirror","knit-surface"],t=>{half(0,1,1,MAT.res);half(0,1,-t,R());const p=new T3.PlaneGeometry(3.8,0.8);p.translate(0,0.1,0);const m=M(p,MAT.ghost,false);m.visible=t<0.99;return t>0.98?'One closed solid':'Mirroring';}],
+["7. Swallow tail cut","Extruded cut from a V-shaped sketch through the tail",["cut-and-hole"],t=>{board(t,1,R());const g=new T3.ExtrudeGeometry(shp([[BX(0)-0.06,-0.16],[BX(0.1),0],[BX(0)-0.06,0.16]]),{depth:0.5,bevelEnabled:false});g.rotateX(PI/2);g.translate(0,0.6-0.45*t,0);const m=M(g,MAT.tool,false);m.visible=t<0.99;return 'Swallow tail';}],
+["8. Thruster fins","Fin outline extruded and filleted, side fins mirrored with toe and cant",["extrude","fillet","mirror"],t=>{board(1,1,MAT.res);const f=cl((t-0.3)/0.7);fins(cl(f*2),cl(f*2-1),R());G.rotation.x=PI*0.8*sm(cl(t/0.3));return 'Toe 3°, cant 6°';}],
+["9. Leash plug","Revolved cut for the leash plug on the deck",["revolve","cut-and-hole"],t=>{board(1,1,MAT.res);fins(1,1,MAT.res);plug(t);return 'Leash plug';}],
+["10. Zebra check","Stripes flow smoothly over the rails, so the surfaces are fair",["zebra-stripes","curvature-map"],t=>{board(1,1,MAT.zebra);fins(1,1,MAT.res);plug(1);return '6\'0" × '+BOARD.W+'" × '+BOARD.T+'", '+BOARD.L+' L';}]
+].map((e,i)=>[EXT,EXG,e[0],e[1],e[3],'surfboard-'+(i+1),e[2]]);
+OPS.unshift(...EXOPS);
+const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+OPS.forEach(o=>{if(o.length<6)o.push(slug(o[2]));});
+const NEX=EXOPS.length;
+document.getElementById('count').textContent=(OPS.length-NEX)+' operations, 1 worked example';
+
+const vw=document.getElementById('vw');
+const ren=new T3.WebGLRenderer({antialias:true,alpha:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setClearColor(0x000000,0);vw.appendChild(ren.domElement);
+const scene=new T3.Scene(),cam=new T3.PerspectiveCamera(35,1,0.1,100);cam.position.set(3.8,2.7,4.4);cam.lookAt(0,0,0);
+scene.add(new T3.HemisphereLight(0xffffff,0x888888,0.85));const dl=new T3.DirectionalLight(0xffffff,0.75);dl.position.set(3,5,4);scene.add(dl);
+const piv=new T3.Group();scene.add(piv);const gh=new T3.GridHelper(5,10,0x888780,0x888780);gh.material.transparent=true;gh.material.opacity=0.25;gh.position.y=-1.15;piv.add(gh);
+function size(){const w=vw.clientWidth,h=vw.clientHeight;ren.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix();}new ResizeObserver(size).observe(vw);size();
+
+let cur=0,playing=true,start=performance.now(),lastT=-1,lastOp=-1,drag=null,rx=0.1,ry=0.4;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const st=document.getElementById('st');
+function build(){if(G){piv.remove(G);G.traverse(o=>{if(o.geometry)o.geometry.dispose();});}G=new T3.Group();piv.add(G);const s=OPS[cur][4](T);st.textContent=s||'';st.hidden=!s;}
+const sl=document.getElementById('sl'),pc=document.getElementById('pc'),pb=document.getElementById('pb');
+function setPlay(p){playing=p;pb.textContent=p?'Pause':'Play';if(p)start=performance.now()-T*2600;}
+pb.onclick=()=>setPlay(!playing);
+sl.oninput=()=>{setPlay(false);T=sl.value/100;};
+vw.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY};vw.setPointerCapture(e.pointerId);});
+vw.addEventListener('pointermove',e=>{if(!drag)return;ry+=(e.clientX-drag.x)*0.01;rx=Math.max(-0.8,Math.min(1.1,rx+(e.clientY-drag.y)*0.01));drag={x:e.clientX,y:e.clientY};});
+vw.addEventListener('pointerup',()=>drag=null);
+
+const tree=document.getElementById('tree');let tier='',grp='',links=[];
+OPS.forEach((o,i)=>{if(o[0]!==tier){tier=o[0];const h=document.createElement('div');h.className='tier';h.textContent=tier;tree.appendChild(h);}if(o[1]!==grp){grp=o[1];const h=document.createElement('div');h.className='grp';h.textContent=grp;tree.appendChild(h);}const a=document.createElement('a');a.href='#'+o[5];a.textContent=o[2];a.onclick=e=>{e.preventDefault();select(i);try{history.replaceState(null,'','#'+o[5]);}catch(_){}};tree.appendChild(a);links.push(a);});
+const usesEl=document.getElementById('uses'),nx=document.getElementById('nx');
+function go(i){select(i);try{history.replaceState(null,'','#'+OPS[i][5]);}catch(_){}}
+nx.onclick=()=>go((cur+1)%NEX);
+function select(i){cur=i;T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
+usesEl.replaceChildren();const u=o[6]||[];usesEl.hidden=!u.length;if(u.length){const s=document.createElement('span');s.textContent='Uses';usesEl.appendChild(s);u.forEach(sl=>{const j=OPS.findIndex(q=>q[5]===sl);if(j<0)return;const b=document.createElement('button');b.type='button';b.textContent=OPS[j][2];b.onclick=()=>go(j);usesEl.appendChild(b);});}
+nx.hidden=i>=NEX;nx.textContent=i===NEX-1?'Start over':'Next step';if(reduce){T=1;}}
+function fromHash(){const h=(location.hash||'').slice(1),i=OPS.findIndex(o=>o[5]===h);select(i>=0?i:0);}
+window.addEventListener('hashchange',fromHash);fromHash();
+
+function loop(now){if(playing&&cur<NEX&&now-start>3900){select((cur+1)%NEX);}if(playing){const ph=((now-start)%4000)/2600;const x=Math.min(1,ph);T=x*x*(3-2*x);}
+const tq=Math.round(T*100)/100;if(tq!==lastT||cur!==lastOp){T=tq;build();lastT=tq;lastOp=cur;sl.value=Math.round(T*100);pc.textContent=Math.round(T*100)+'%';}
+if(!drag&&!reduce)ry+=0.003;piv.rotation.set(rx,ry,0);ren.render(scene,cam);requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
