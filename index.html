@@ -235,7 +235,7 @@ function pSleeve(bore,mat){const sp=[],w=PI/30;for(let k=0;k<15;k++){const a=2*P
   const part=(z0,z1,hole)=>{if(z1-z0<0.5)return;const s=new T3.Shape();s.absarc(0,0,PSL,0,2*PI,false);if(hole)s.holes.push(new T3.Path(sp.slice().reverse()));const g=new T3.ExtrudeGeometry(s,{depth:z1-z0,bevelEnabled:false,curveSegments:40});g.translate(0,0,z0);M(pMap(g),mat,false);};
   part(-0.01,PHL*bore,true);part(PHL*bore,PHL,false);return sp;}
 const pAxis=()=>L([PV(0,0,-40),PV(0,0,150)],AXM);
-const PSTEP='models/propeller.step';
+const PSTEP=/github\.io$/.test(location.hostname)||location.protocol==='file:'?'models/propeller.step':'https://github.com/sesasa/cad-operations-atlas/blob/main/models/propeller.step';
 const PROPOPS=[
 ["1. Hub barrel","Revolve a tapered profile into the barrel that carries the blades",["revolve"],t=>{pAxis();L([[0,0],[PH0,0],[PH1,PHL],[0,PHL]].map(([r,z])=>PV(0,r+0.3,z)),DASH,true);pRev([[0,0],[PH0,0],[PH1,PHL],[0,PHL]],t*2*PI,R());return 'Ø74 to Ø66 mm, 100 mm long';}],
 ["2. Pitch helices","Helices at three radii set the 17-inch pitch every section must follow",["helix"],t=>{pAxis();pBarrel(MAT.base);[0.3,0.6,1].forEach(x=>{const r=x*PR,z0=pZ0(r);tube(crv(u=>{const q=-0.9+1.8*u;return PV(r*Math.sin(q),r*Math.cos(q),z0+PP*q/(2*PI));},60),0.012,120,t,R(),6);});return 'Advance 432 mm per turn';}],
@@ -284,7 +284,7 @@ function go(i){select(i);openTier(OPS[i][0],true);reveal(i);try{history.replaceS
 nx.onclick=()=>go(nextEx(cur));
 function select(i){if(OPS[i][1]==='Outboard propeller'&&OPS[cur][1]!==OPS[i][1]){ry=2.3;rx=0.2;}cur=i;T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
 usesEl.replaceChildren();const u=o[6]||[];usesEl.hidden=!u.length;if(u.length){const s=document.createElement('span');s.textContent='Uses';usesEl.appendChild(s);u.forEach(sl=>{const j=OPS.findIndex(q=>q[5]===sl);if(j<0)return;const b=document.createElement('button');b.type='button';b.textContent=OPS[j][2];b.onclick=()=>go(j);usesEl.appendChild(b);});}
-nx.hidden=i<EX0;nx.textContent=i>=EX0&&exGroup(i).at(-1)===i?'Start over':'Next step';dlA.hidden=!o[7];if(o[7])dlA.href=o[7];if(reduce){T=1;}}
+nx.hidden=i<EX0;nx.textContent=i>=EX0&&exGroup(i).at(-1)===i?'Start over':'Next step';dlA.hidden=!o[7];if(o[7]){dlA.href=o[7];dlA.target=/^https:/.test(o[7])?'_blank':'';}if(reduce){T=1;}}
 function fromHash(){const h=(location.hash||'').slice(1),i=OPS.findIndex(o=>o[5]===h);select(i>=0?i:0);openTier(OPS[cur][0],!narrow.matches);reveal(cur);}
 window.addEventListener('hashchange',fromHash);fromHash();
 
