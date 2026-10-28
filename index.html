@@ -68,7 +68,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
   <header>
     <div>
       <h1>CAD Operations Atlas</h1>
-      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. Two worked examples build a 6'0" shortboard and a three-blade outboard propeller step by step. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
+      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. Three worked examples build a 6'0" shortboard, a three-blade outboard propeller, and a snap-fit plastic enclosure step by step. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
     </div>
     <span class="count" id="count"></span>
   </header>
@@ -249,20 +249,66 @@ const PROPOPS=[
 ["10. Zebra check","Stripes run smoothly across each blade, so the lofted surfaces are fair",["zebra-stripes","curvature-map"],t=>{pBlades(1,MAT.zebra,0.19);pBarrel(MAT.res,true);pRibs(1,MAT.res);pSleeve(1,MAT.res);return '13¼" × 17", 3 blades, 1.38 kg aluminium';}]
 ].map((e,i)=>[EXT,'Outboard propeller',e[0],e[1],e[3],'propeller-'+(i+1),e[2],PSTEP]);
 OPS.push(...PROPOPS);
+// SNAP_: the same numbers as models/snap_enclosure.py (millimetres), drawn SK scene units per mm, lid up.
+const SK=2.6/80,SV=(x,y,z)=>V(x*SK,(z-12)*SK,-y*SK);
+const SH=22,SWALL=2,SHX=20,SYO=22.8,SYI=21.2,SUND=1.2,SZRET=10,SZRAMP=9.5,SZTIP=9.5-1.2/Math.tan(PI/6),SWZ0=7,SWZ1=10.1,SL=12,SE=16;
+const SP=8.2,SMATE=(0.5+Math.tan(PI/6))/(1-0.5*Math.tan(PI/6));   // N per mm of deflection, ramp force factor
+const SGHOST=MS({color:0xB4B2A9,transparent:true,opacity:0.32,depthWrite:false});
+function sMap(g){const p=g.attributes.position;for(let i=0;i<p.count;i++){const v=SV(p.getX(i),p.getY(i),p.getZ(i));p.setXYZ(i,v.x,v.y,v.z);}g.computeVertexNormals();return g;}
+function rrPath(o,hx,hy,r){r=Math.max(r,0.01);o.moveTo(-hx+r,-hy);o.lineTo(hx-r,-hy);o.absarc(hx-r,-hy+r,r,-PI/2,0);o.lineTo(hx,hy-r);o.absarc(hx-r,hy-r,r,0,PI/2);o.lineTo(-hx+r,hy);o.absarc(-hx+r,hy-r,r,PI/2,PI);o.lineTo(-hx,-hy+r);o.absarc(-hx+r,-hy+r,r,PI,1.5*PI);return o;}
+function sSlab(shape,z0,z1,mat,edges=true){if(z1-z0<0.05)return;const g=new T3.ExtrudeGeometry(shape,{depth:z1-z0,bevelEnabled:false,curveSegments:10});g.translate(0,0,z0);return M(sMap(g),mat,edges);}
+const sRing=(r)=>{const s=rrPath(new T3.Shape(),40,25,r);s.holes.push(rrPath(new T3.Path(),38,23,r-2));return s;};
+function sHalf(hx,hy,r){const q=[[23.5,hy]],arc=(cx,cy,a0,a1)=>{for(let k=0;k<=6;k++){const a=a0+(a1-a0)*k/6;q.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]);}};arc(hx-r,hy-r,PI/2,0);arc(hx-r,-hy+r,0,-PI/2);q.push([23.5,-hy]);return q;}
+const sEnd=sg=>shp(sHalf(40,25,4).concat(sHalf(38,23,2).reverse()).map(([x,y])=>[sg*x,y]));
+function sBase(mat,r=4,h=SH,depth=20,win=false){const out=rrPath(new T3.Shape(),40,25,r);if(depth<0.05)return sSlab(out,0,h,mat);sSlab(out,0,h-depth,mat);
+  if(!win)return sSlab(sRing(r),h-depth,h,mat);sSlab(sRing(r),2,SWZ0,mat);sSlab(sRing(r),SWZ1,h,mat);
+  [-1,1].forEach(sg=>{sSlab(sEnd(sg),SWZ0,SWZ1,mat);sSlab(shp([[-16.5,sg*23],[16.5,sg*23],[16.5,sg*25],[-16.5,sg*25]]),SWZ0,SWZ1,mat);});}
+function sBox(x0,x1,y0,y1,z0,z1,mat){[y0,y1]=[Math.min(y0,y1),Math.max(y0,y1)];const g=new T3.BoxGeometry(x1-x0,y1-y0,z1-z0);g.translate((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);return M(sMap(g),mat);}
+function sLid(e,mat,rib=1){sSlab(rrPath(new T3.Shape(),40,25,4),SH+e,SH+2+e,mat);if(rib<0.01)return;const z0=SH-3*rib+e,z1=SH+e;
+  [[-15,15],[25,35],[-35,-25]].forEach(([a,b])=>[1,-1].forEach(s=>sBox(a,b,s*21.6,s*22.8,z0,z1,mat)));[1,-1].forEach(s=>sBox(s*36.6,s*37.8,-15,15,z0,z1,mat));}
+const SPROF=[[SYI,SH],[SYO,SH],[SYO,SZRET],[SYO+SUND,SZRET],[SYO+SUND,SZRAMP],[SYO,SZTIP],[SYO,SZTIP-0.4],[SYI,SZTIP-0.4]];
+const sBend=(z,d)=>{const s=Math.min(SL,SH-z);return d*(s*s*(3*SL-s))/(2*SL**3);};
+function sHook(hx,sd,e,d,mat,w=6,heat=false){if(w<0.05)return;const g=new T3.ExtrudeGeometry(shp(SPROF),{depth:w,bevelEnabled:false});const p=g.attributes.position,col=[],cb=new T3.Color(0x378ADD),cr=new T3.Color(0xE24B4A);
+  for(let i=0;i<p.count;i++){const u=p.getX(i),z=p.getY(i),x=hx-w/2+p.getZ(i);p.setXYZ(i,x,sd*(u-sBend(z,d)),z+e);const k=heat?cl(Math.abs(d)*(1-Math.min(SL,SH-z)/SL)):0;const c=cb.clone().lerp(cr,k);col.push(c.r,c.g,c.b);}
+  g.setAttribute('color',new T3.Float32BufferAttribute(col,3));return M(sMap(g),heat?MAT.vc:mat,!heat);}
+const sHooks=(e,d,mat,heat)=>[-SHX,SHX].forEach(x=>[1,-1].forEach(sd=>sHook(x,sd,e,d,mat,6,heat)));
+function sNeed(e){let n=0;for(let k=0;k<=40;k++){const z=SZTIP+(SZRET-SZTIP)*k/40,pr=z>=SZRAMP?SUND:SUND*(z-SZTIP)/(SZRAMP-SZTIP),zw=z+e;if(zw<=SH&&(zw<SWZ0||zw>SWZ1))n=Math.max(n,pr-0.2);}return n;}
+const sKey=(t,k)=>{for(let i=1;i<k.length;i++)if(t<=k[i][0]){const [t0,v0]=k[i-1],[t1,v1]=k[i];return v0+(v1-v0)*(t-t0)/(t1-t0);}return k[k.length-1][1];};
+const SX=2,SCLIP=new T3.Plane(),SCLIP0=new T3.Plane(new T3.Vector3(-1,0,0),SHX*SK),SCM=new Map();
+function sSection(){const c=SV(SHX,0,18),z=2.0;G.scale.setScalar(z);G.position.copy(c).multiplyScalar(-z);G.userData.clip=true;   // cut at the hooks' mid-plane
+  G.traverse(o=>{if(!o.material)return;if(!SCM.has(o.material)){const m=o.material.clone();m.clippingPlanes=[SCLIP];SCM.set(o.material,m);}o.material=SCM.get(o.material);});}
+const sInfo=d=>'deflection '+d.toFixed(2)+' mm, strain '+(1.67*d).toFixed(2)+' %';
+const SSTEP=/github\.io$/.test(location.hostname)||location.protocol==='file:'?'models/snap_enclosure.step':'https://github.com/sesasa/cad-operations-atlas/blob/main/models/snap_enclosure.step';
+const SNAPOPS=[
+["1. Base block","Extrude an 80 × 50 mm rectangle 22 mm tall",["extrude"],t=>{L([[-40,-25],[40,-25],[40,25],[-40,25]].map(([x,y])=>SV(x,y,0)),DASH,true);sBase(R(),0.01,SH*t,0);return '80 × 50 × '+Math.round(SH*t)+' mm';}],
+["2. Round the corners","Fillet the four vertical edges with a 4 mm radius",["fillet"],t=>{sBase(R(),Math.max(0.01,4*t),SH,0);return 'R '+(4*t).toFixed(1)+' mm';}],
+["3. Shell","Remove the top face and hollow the block to a 2 mm wall",["shell"],t=>{sBase(R(),4,SH,20*t);return 'Wall 2 mm, depth '+Math.round(20*t)+' mm';}],
+["4. Catch windows","Cut four 7 × 3 mm windows through the long walls for the hooks to catch in",["cut-and-hole","mirror"],t=>{const done=t>0.99;sBase(R(),4,SH,20,done);if(!done)[-SHX,SHX].forEach(x=>[1,-1].forEach(s=>sBox(x-3.5,x+3.5,s*(26.5-4*t),s*(29-4*t),SWZ0,SWZ1,MAT.tool)));return '7 × 3.1 mm, top edge at z 10.1';}],
+["5. Lid and ribs","A 2 mm lid; thin ribs just inside the walls locate it",["extrude","rib"],t=>{sBase(MAT.base,4,SH,20,true);sLid(SE,R(),cl(t*1.4-0.4));return 'Ribs 1.2 mm, 0.2 mm clearance';}],
+["6. Cantilever hook","Sketch the hook and extrude it 6 mm: 1.6 mm beam, 30° lead-in, 90° retaining face",["extrude"],t=>{sBase(MAT.base,4,SH,20,true);sLid(SE,MAT.res);L(SPROF.map(([y,z])=>SV(SHX-3.05,-y,z+SE)),DASH,true);sHook(SHX,-1,SE,0,R(),6*t);return 'l 12, h 1.6, b 6 mm, undercut 1.2 mm';}],
+["7. Pattern the hooks","Repeat the hook along the wall, then mirror both to the far side",["linear-pattern","mirror"],t=>{sBase(MAT.base,4,SH,20,true);sLid(SE,MAT.res);sHook(SHX,-1,SE,0,MAT.res);sHook(-SHX,-1,SE,0,R(),6*cl(t*2));[SHX,-SHX].forEach(x=>sHook(x,1,SE,0,R(),6*cl(t*2-1)));return '4 hooks';}],
+["8. Snap together","Section view: the lid presses down, the ramp bends the hook inward, then it springs out into the window",["flex"],t=>{const e=sKey(t,[[0,17],[0.12,14.6],[0.42,12.4],[0.72,0.1],[0.76,0],[1,0]]),ring=t>0.76?-0.25*Math.exp(-(t-0.76)*25)*Math.cos((t-0.76)*80):0,dd=sNeed(e);
+  sBase(MAT.base,4,SH,20,true);sLid(e,MAT.res);sHooks(e,(dd+ring)*SX,MAT.res,true);sSection();if(t>0.76)return 'Click: hooks seated, strain back to 0';if(dd<0.001)return e>12?'Lowering the lid':'Head reaches the window';
+  return sInfo(dd)+', push '+Math.round(4*SP*dd*(dd<0.995?SMATE:0.5))+' N (bend drawn ×2)';},[-0.8,-0.12]],
+["9. Release","The 90° faces won't pull apart; press each hook in through its window, then lift",["flex"],t=>{const press=1.05*sm(cl(t/0.3)),e=14.8*sm(cl((t-0.35)/0.65)),d=e<0.15?press:Math.max(sNeed(e),e<2?1.05:0);
+  sBase(MAT.base,4,SH,20,true);sLid(e,MAT.res);sHooks(e,d*SX,MAT.res,true);if(e<1.5)[-SHX,SHX].forEach(x=>[1,-1].forEach(s=>{const y=s*(SYO+SUND-press+0.1);sBox(x-1.5,x+1.5,y,y+s*9,8.2,9.6,MAT.tool);}));
+  sSection();return e<0.15?'Pressing in: '+press.toFixed(2)+' mm, '+Math.round(SP*press)+' N per hook':'Lid lifts free';},[-0.8,-0.12]]
+].map((e,i)=>[EXT,'Snap-fit enclosure',e[0],e[1],e[3],'snap-fit-'+(i+1),e[2],SSTEP,e[4]]);
+OPS.push(...SNAPOPS);
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 OPS.forEach(o=>{if(o.length<6)o.push(slug(o[2]));});
-const NEX=EXOPS.length+PROPOPS.length,EX0=OPS.length-NEX,exGroup=i=>OPS.map((o,j)=>j>=EX0&&o[1]===OPS[i][1]?j:-1).filter(j=>j>=0),nextEx=i=>{const a=exGroup(i);return a[(a.indexOf(i)+1)%a.length];};
-document.getElementById('count').textContent=(OPS.length-NEX)+' operations, 2 worked examples';
+const NEX=EXOPS.length+PROPOPS.length+SNAPOPS.length,EX0=OPS.length-NEX,exGroup=i=>OPS.map((o,j)=>j>=EX0&&o[1]===OPS[i][1]?j:-1).filter(j=>j>=0),nextEx=i=>{const a=exGroup(i);return a[(a.indexOf(i)+1)%a.length];};
+document.getElementById('count').textContent=(OPS.length-NEX)+' operations, 3 worked examples';
 
 const vw=document.getElementById('vw');
-const ren=new T3.WebGLRenderer({antialias:true,alpha:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setClearColor(0x000000,0);vw.appendChild(ren.domElement);
+const ren=new T3.WebGLRenderer({antialias:true,alpha:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setClearColor(0x000000,0);ren.localClippingEnabled=true;vw.appendChild(ren.domElement);
 const scene=new T3.Scene(),cam=new T3.PerspectiveCamera(35,1,0.1,100);cam.position.set(3.8,2.7,4.4);cam.lookAt(0,0,0);
 scene.add(new T3.HemisphereLight(0xffffff,0x888888,0.85));const dl=new T3.DirectionalLight(0xffffff,0.75);dl.position.set(3,5,4);scene.add(dl);
 const piv=new T3.Group();scene.add(piv);const gh=new T3.GridHelper(5,10,0x888780,0x888780);gh.material.transparent=true;gh.material.opacity=0.25;gh.position.y=-1.15;piv.add(gh);
 let panelOpen=false;const wide=matchMedia('(min-width:601px)');
 function size(){const w=vw.clientWidth,h=vw.clientHeight;ren.setSize(w,h);cam.aspect=w/h;const off=panelOpen&&wide.matches?(document.getElementById('tree').offsetWidth+12)/2:0;if(off)cam.setViewOffset(w,h,off,0,w,h);else cam.clearViewOffset();cam.updateProjectionMatrix();}wide.addEventListener('change',size);new ResizeObserver(size).observe(vw);size();
 
-let cur=0,playing=true,start=performance.now(),lastT=-1,lastOp=-1,drag=null,rx=0.1,ry=0.4;
+let spin=true,cur=0,playing=true,start=performance.now(),lastT=-1,lastOp=-1,drag=null,rx=0.1,ry=0.4;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const st=document.getElementById('st');
 function build(){if(G){piv.remove(G);G.traverse(o=>{if(o.geometry)o.geometry.dispose();});}G=new T3.Group();piv.add(G);const s=OPS[cur][4](T);st.textContent=s||'';st.hidden=!s;}
@@ -282,7 +328,7 @@ const usesEl=document.getElementById('uses'),nx=document.getElementById('nx'),dl
 function reveal(i){const a=links[i],bx=a.parentElement;if(bx.hidden)return;bx.scrollTop+=a.getBoundingClientRect().top-bx.getBoundingClientRect().top-bx.clientHeight/2+a.offsetHeight/2;}
 function go(i){select(i);openTier(OPS[i][0],true);reveal(i);try{history.replaceState(null,'','#'+OPS[i][5]);}catch(_){}}
 nx.onclick=()=>go(nextEx(cur));
-function select(i){if(OPS[i][1]==='Outboard propeller'&&OPS[cur][1]!==OPS[i][1]){ry=2.3;rx=0.2;}cur=i;T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
+function select(i){{const vw0={'Outboard propeller':[2.3,0.2],'Snap-fit enclosure':[0.35,0.15]}[OPS[i][1]];if(vw0&&OPS[cur][1]!==OPS[i][1])[ry,rx]=vw0;}cur=i;spin=!OPS[i][8];if(OPS[i][8])[ry,rx]=OPS[i][8];T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
 usesEl.replaceChildren();const u=o[6]||[];usesEl.hidden=!u.length;if(u.length){const s=document.createElement('span');s.textContent='Uses';usesEl.appendChild(s);u.forEach(sl=>{const j=OPS.findIndex(q=>q[5]===sl);if(j<0)return;const b=document.createElement('button');b.type='button';b.textContent=OPS[j][2];b.onclick=()=>go(j);usesEl.appendChild(b);});}
 nx.hidden=i<EX0;nx.textContent=i>=EX0&&exGroup(i).at(-1)===i?'Start over':'Next step';dlA.hidden=!o[7];if(o[7]){dlA.href=o[7];dlA.target=/^https:/.test(o[7])?'_blank':'';}if(reduce){T=1;}}
 function fromHash(){const h=(location.hash||'').slice(1),i=OPS.findIndex(o=>o[5]===h);select(i>=0?i:0);openTier(OPS[cur][0],!narrow.matches);reveal(cur);}
@@ -290,7 +336,7 @@ window.addEventListener('hashchange',fromHash);fromHash();
 
 function loop(now){if(playing&&cur>=EX0&&now-start>3900){select(nextEx(cur));}if(playing){const ph=((now-start)%4000)/2600;const x=Math.min(1,ph);T=x*x*(3-2*x);}
 const tq=Math.round(T*100)/100;if(tq!==lastT||cur!==lastOp){T=tq;build();lastT=tq;lastOp=cur;sl.value=Math.round(T*100);pc.textContent=Math.round(T*100)+'%';}
-if(!drag&&!reduce)ry+=0.003;piv.rotation.set(rx,ry,0);ren.render(scene,cam);requestAnimationFrame(loop);}
+if(spin&&!drag&&!reduce)ry+=0.003;piv.rotation.set(rx,ry,0);if(G&&G.userData.clip){G.updateMatrixWorld(true);SCLIP.copy(SCLIP0).applyMatrix4(G.matrixWorld);}ren.render(scene,cam);requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script>
 </body>
