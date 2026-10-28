@@ -1,0 +1,219 @@
+{
+ "material": {
+  "E_MPa": 2300.0,
+  "nu": 0.35,
+  "strain_limit": 0.025
+ },
+ "load": {
+  "deflection_mm": 1.0,
+  "where": "even pressure on the head's contact face, scaled to 1.0 mm"
+ },
+ "hand_calc": {
+  "deflection_mm": 1.0,
+  "strain": 0.01186460271748601,
+  "force_N": 5.8219290566934,
+  "mating_force_N": 8.817710643165434
+ },
+ "runs": [
+  {
+   "design": "straight hook, R0.6 root fillets",
+   "root_r": 0.6,
+   "t_tip": 1.6,
+   "h_root": 0.24,
+   "nodes": 8800,
+   "elements": 38895,
+   "dofs": 184044,
+   "force_N": 6.74786,
+   "peak_strain": 0.0226,
+   "peak_at_mm": [
+    3.02,
+    22.83,
+    21.6
+   ],
+   "peak_von_mises_MPa": 50.28181,
+   "seconds": 122.8,
+   "hand_force_N": 8.177778288888923,
+   "hand_strain": 0.016662501041406316
+  },
+  {
+   "design": "straight hook, R0.6 root fillets",
+   "root_r": 0.6,
+   "t_tip": 1.6,
+   "h_root": 0.12,
+   "nodes": 12681,
+   "elements": 57547,
+   "dofs": 268365,
+   "force_N": 6.72669,
+   "peak_strain": 0.02469,
+   "peak_at_mm": [
+    -3.0,
+    22.8,
+    21.5
+   ],
+   "peak_von_mises_MPa": 55.79356,
+   "seconds": 197.8,
+   "hand_force_N": 8.177778288888923,
+   "hand_strain": 0.016662501041406316
+  },
+  {
+   "design": "straight hook, R0.6 root fillets",
+   "root_r": 0.6,
+   "t_tip": 1.6,
+   "h_root": 0.08,
+   "nodes": 20531,
+   "elements": 98051,
+   "dofs": 444801,
+   "force_N": 6.72209,
+   "peak_strain": 0.02455,
+   "peak_at_mm": [
+    -3.0,
+    22.8,
+    21.47
+   ],
+   "peak_von_mises_MPa": 55.85575,
+   "seconds": 337.2,
+   "hand_force_N": 8.177778288888923,
+   "hand_strain": 0.016662501041406316
+  },
+  {
+   "design": "tapered hook, 1.6 to 1.0 mm, R0.6 root fillets",
+   "root_r": 0.6,
+   "t_tip": 1.0,
+   "h_root": 0.24,
+   "nodes": 7846,
+   "elements": 33487,
+   "dofs": 161622,
+   "force_N": 4.940979145512073,
+   "peak_strain": 0.016722130727198525,
+   "peak_at_mm": [
+    -3.02,
+    22.83,
+    21.6
+   ],
+   "peak_von_mises_MPa": 37.29690667179537,
+   "seconds": 100.7,
+   "hand_force_N": 5.8219290566934,
+   "hand_strain": 0.01186460271748601
+  },
+  {
+   "design": "tapered hook, 1.6 to 1.0 mm, R0.6 root fillets",
+   "root_r": 0.6,
+   "t_tip": 1.0,
+   "h_root": 0.12,
+   "nodes": 11723,
+   "elements": 52075,
+   "dofs": 245691,
+   "force_N": 4.929598404166782,
+   "peak_strain": 0.018578970885820653,
+   "peak_at_mm": [
+    -3.0,
+    22.8,
+    21.5
+   ],
+   "peak_von_mises_MPa": 42.14004821708031,
+   "seconds": 163.3,
+   "hand_force_N": 5.8219290566934,
+   "hand_strain": 0.01186460271748601
+  },
+  {
+   "design": "tapered hook, 1.6 to 1.0 mm, R0.6 root fillets",
+   "root_r": 0.6,
+   "t_tip": 1.0,
+   "h_root": 0.08,
+   "nodes": 19479,
+   "elements": 92086,
+   "dofs": 420003,
+   "force_N": 4.926998644376992,
+   "peak_strain": 0.01833747201827405,
+   "peak_at_mm": [
+    3.0,
+    22.8,
+    21.47
+   ],
+   "peak_von_mises_MPa": 41.80839294170771,
+   "seconds": 319.8,
+   "hand_force_N": 5.8219290566934,
+   "hand_strain": 0.01186460271748601
+  },
+  {
+   "design": "straight hook, sharp root",
+   "root_r": 0.0,
+   "t_tip": 1.6,
+   "h_root": 0.24,
+   "nodes": 8453,
+   "elements": 37416,
+   "dofs": 176931,
+   "force_N": 6.204146929542283,
+   "peak_strain": 0.0357682291826943,
+   "peak_at_mm": [
+    -2.99,
+    22.79,
+    21.96
+   ],
+   "peak_von_mises_MPa": 78.91309448408555,
+   "seconds": 80.4,
+   "hand_force_N": 8.177778288888923,
+   "hand_strain": 0.016662501041406316
+  },
+  {
+   "design": "straight hook, sharp root",
+   "root_r": 0.0,
+   "t_tip": 1.6,
+   "h_root": 0.12,
+   "nodes": 10603,
+   "elements": 48159,
+   "dofs": 224502,
+   "force_N": 6.181203310622408,
+   "peak_strain": 0.051553710534258085,
+   "peak_at_mm": [
+    -2.99,
+    22.79,
+    21.98
+   ],
+   "peak_von_mises_MPa": 113.27436714079461,
+   "seconds": 148.1,
+   "hand_force_N": 8.177778288888923,
+   "hand_strain": 0.016662501041406316
+  },
+  {
+   "design": "straight hook, sharp root",
+   "root_r": 0.0,
+   "t_tip": 1.6,
+   "h_root": 0.08,
+   "nodes": 15014,
+   "elements": 72096,
+   "dofs": 326046,
+   "force_N": 6.174272806011326,
+   "peak_strain": 0.06378096358927568,
+   "peak_at_mm": [
+    -3.0,
+    22.8,
+    21.99
+   ],
+   "peak_von_mises_MPa": 139.72169899830305,
+   "seconds": 228.5,
+   "hand_force_N": 8.177778288888923,
+   "hand_strain": 0.016662501041406316
+  }
+ ],
+ "result": {
+  "design": "tapered hook, 1.6 to 1.0 mm, R0.6 root fillets",
+  "root_r": 0.6,
+  "t_tip": 1.0,
+  "h_root": 0.08,
+  "nodes": 19479,
+  "elements": 92086,
+  "dofs": 420003,
+  "force_N": 4.926998644376992,
+  "peak_strain": 0.01833747201827405,
+  "peak_at_mm": [
+   3.0,
+   22.8,
+   21.47
+  ],
+  "peak_von_mises_MPa": 41.80839294170771,
+  "seconds": 319.8,
+  "hand_force_N": 5.8219290566934,
+  "hand_strain": 0.01186460271748601
+ }
+}
