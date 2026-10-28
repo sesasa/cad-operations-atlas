@@ -91,6 +91,8 @@ A note on the root: a true variable-radius fillet between the lofted blade and t
 
 ## Worked example 3: a snap-fit enclosure
 
+> This example also has its own project, **[snap-fit-enclosure](https://github.com/sesasa/snap-fit-enclosure)** ([live demo](https://sesasa.github.io/snap-fit-enclosure/)), which adds a side-by-side view of the three FEA designs and a mesh-convergence chart.
+
 An 80 × 50 × 24 mm ABS box. Four cantilever hooks on the lid pass down inside the base walls, and their heads catch in windows cut through the long walls. [`models/snap_enclosure.py`](models/snap_enclosure.py) builds both parts with CadQuery, checks that they don't overlap when closed, works out the snap-fit numbers, and exports [`models/snap_enclosure.step`](models/snap_enclosure.step) as a two-part assembly. [`models/snap_fea.py`](models/snap_fea.py) then checks one hook with a finite-element analysis (below), which changed the design.
 
 | Hook | |
