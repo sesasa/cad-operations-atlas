@@ -306,11 +306,11 @@ function sLabel(text,y,z,hmm=2.6){let m=SLBL.get(text);if(!m){const c=document.c
   x.font=f;x.fillStyle='rgba(255,255,255,0.88)';x.beginPath();x.roundRect?x.roundRect(0,0,w,60,14):x.rect(0,0,w,60);x.fill();x.fillStyle='#17202b';x.textBaseline='middle';x.fillText(text,18,31);
   m=new T3.SpriteMaterial({map:new T3.CanvasTexture(c),depthTest:false,transparent:true});m.userData.own=true;m.userData.w=w/60;SLBL.set(text,m);}
   const sp=new T3.Sprite(m),hgt=hmm*SK;sp.scale.set(hgt*m.userData.w,hgt,1);sp.position.copy(SV(SXC-0.6,y,z));sp.renderOrder=7;G.add(sp);}
-function sDress(e,d,lbl=true){sCaps(e,d);if(!lbl)return;sLabel('Lid',-12,SH+5.5+e);sLabel('Hook',-14.5,15.5+e);sLabel('Base wall',-31,17);sLabel('Window',-31,8.5);}
+function sDress(e,d,lbl=true){sCaps(e,d);if(!lbl)return;sLabel('Lid',-12,SH+5.5+e);sLabel('Hook',-14.5,15.5+e);sLabel('Base wall',-29.5,17);sLabel('Window',-29.5,8.5);}
 function sNeed(e){let n=0;for(let k=0;k<=40;k++){const z=SZTIP+(SZRET-SZTIP)*k/40,pr=z>=SZRAMP?SUND:SUND*(z-SZTIP)/(SZRAMP-SZTIP),zw=z+e;if(zw<=SH&&(zw<SWZ0||zw>SWZ1))n=Math.max(n,SYO+pr-(zw>SH-1?23+zw-(SH-1):23));}return n;}
 const sKey=(t,k)=>{for(let i=1;i<k.length;i++)if(t<=k[i][0]){const [t0,v0]=k[i-1],[t1,v1]=k[i];return v0+(v1-v0)*(t-t0)/(t1-t0);}return k[k.length-1][1];};
 const SX=2,SCLIP=new T3.Plane(),SCLIP0=new T3.Plane(new T3.Vector3(-1,0,0),SHX*SK),SCM=new Map();
-function sSection(){const c=SV(SHX,0,18),z=2.0;G.scale.setScalar(z);G.position.copy(c).multiplyScalar(-z);G.userData.clip=true;   // cut at the hooks' mid-plane
+function sSection(){const c=SV(SHX,-4,18),z=2.0;G.scale.setScalar(z);G.position.copy(c).multiplyScalar(-z);G.userData.clip=true;   // cut at the hooks' mid-plane
   G.traverse(o=>{if(!o.material||o.material.userData.own)return;if(!SCM.has(o.material)){const m=o.material.clone();m.clippingPlanes=[SCLIP];SCM.set(o.material,m);}o.material=SCM.get(o.material);});}
 const sInfo=d=>'deflection '+d.toFixed(2)+' mm, strain '+(SEPS*d).toFixed(2)+' %';
 // FEA step: the surface mesh, displacement and strain written by models/snap_fea.py (window.SNAP_FEA)
