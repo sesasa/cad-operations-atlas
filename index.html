@@ -36,6 +36,7 @@ h1{font-family:var(--f-display);font-stretch:72%;font-weight:700;font-size:clamp
 .hint{position:absolute;left:12px;bottom:8px;font-family:var(--f-mono);font-size:11px;color:var(--muted);pointer-events:none}
 .ctrl{display:flex;align-items:center;gap:12px}
 .ctrl button{font:inherit;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:6px 12px;cursor:pointer;min-width:72px}
+.ctrl a{font-family:var(--f-mono);font-size:12px;color:var(--accent);white-space:nowrap}
 .ctrl input{flex:1;accent-color:var(--accent)}
 #pc{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:40px;text-align:right;font-variant-numeric:tabular-nums}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted)}
@@ -67,7 +68,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
   <header>
     <div>
       <h1>CAD Operations Atlas</h1>
-      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. A worked example shows a 6'0" shortboard built in ten steps. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
+      <p class="lede">The modeling operations behind real parts, from extrude and loft to zebra stripes and mold splits. Two worked examples build a 6'0" shortboard and a three-blade outboard propeller step by step. Pick any operation to watch it build, scrub the timeline, and drag to rotate.</p>
     </div>
     <span class="count" id="count"></span>
   </header>
@@ -85,6 +86,7 @@ footer{color:var(--muted);font-size:13px;border-top:1px solid var(--line);paddin
         <input type="range" id="sl" min="0" max="100" step="1" value="0" aria-label="Operation progress">
         <span id="pc">0%</span>
         <button id="nx" type="button" hidden>Next step</button>
+        <a id="dl" hidden download>STEP file</a>
       </div>
       <div class="legend">
         <span><span class="sw" style="background:#E24B4A"></span>Input sketch, tool, or scan</span>
@@ -195,7 +197,7 @@ function fins(fc,fs,mat){const s=0.2,z=BW(s)-0.06;fin(0.12,0,0,0,fc,mat);fin(s,z
 const DARK=MS({color:0x2C2C2A,roughness:0.8});
 function plug(t){const s=0.13,y=BD(s);if(t>0.5){const g=new T3.CylinderGeometry(0.03,0.03,0.018,24);g.translate(BX(s),y-0.0085,0);M(g,DARK,false);}if(t<0.98){const g=new T3.CylinderGeometry(0.03,0.03,0.4,24);g.translate(BX(s),y+0.2+0.45*(1-cl(t/0.6))-0.01,0);M(g,MAT.tool,false);}}
 const sm=x=>x*x*(3-2*x);
-const EXT='Worked example',EXG='6\'0" shortboard';
+const EXT='Worked examples',EXG='6\'0" shortboard';
 const EXOPS=[
 ["1. Outline sketch","Half the plan shape as one spline on the top plane, mirrored later",["3d-spline"],t=>{const p=new T3.PlaneGeometry(3.8,1.2);p.rotateX(-PI/2);p.translate(0,-0.08,0);M(p,MAT.ghost,false);L([V(-1.85,-0.08,0),V(1.85,-0.08,0)],AXM);if(t>0.01)L(crv(u=>{const s=u*t;return V(BX(s),-0.08,BW(s));},120));return '6\'0" long, '+BOARD.W+'" wide';}],
 ["2. Rocker and deck line","Bottom rocker and deck curve on the side plane set the thickness flow",["3d-spline"],t=>{prior(2);const p=new T3.PlaneGeometry(3.8,0.8);p.translate(0,0.1,0);M(p,MAT.ghost,false);if(t>0.01){L(crv(u=>{const s=u*t;return V(BX(s),BB(s),0);},120));L(crv(u=>{const s=u*t;return V(BX(s),BD(s),0);},120));}return 'Nose lift '+BOARD.nose+'", tail lift '+BOARD.tail+'"';}],
@@ -209,10 +211,48 @@ const EXOPS=[
 ["10. Zebra check","Stripes flow smoothly over the rails, so the surfaces are fair",["zebra-stripes","curvature-map"],t=>{board(1,1,MAT.zebra);fins(1,1,MAT.res);plug(1);return '6\'0" × '+BOARD.W+'" × '+BOARD.T+'", '+BOARD.L+' L';}]
 ].map((e,i)=>[EXT,EXG,e[0],e[1],e[3],'surfboard-'+(i+1),e[2]]);
 OPS.push(...EXOPS);
+// PROP_: the same formulas as models/propeller.py (millimetres), drawn K scene units per mm with the shaft along X.
+const PR=168,PP=432,PRAKE=15*PI/180,PSKEW=28*PI/180,PX0=0.17,PZM=50,PHL=100,PH0=37,PH1=33,PWALL=5,PSL=17,K=1.3/168;
+const PST=[0.17,0.21,0.25,0.30,0.38,0.47,0.56,0.65,0.75,0.85,0.93,1.0];
+const PV=(x,y,z)=>V((z-56)*K,y*K,-x*K);
+const pFl=x=>Math.max(0,1-(x-PX0)*PR/25)**2;
+const pCh=(x,f)=>140*Math.sqrt(Math.max(0,1-((x-0.55)/0.48)**2))+6+20*f*pFl(x);
+const pTh=(x,f)=>14-12*(x-PX0)/(1-PX0)+9*f*pFl(x);
+const pPhi=x=>Math.atan(PP/(2*PI*x*PR));
+const pZ0=r=>PZM+(r-PX0*PR)*Math.tan(PRAKE);
+function pSec(x,f,rot=0,n=24){const r=x*PR,c=pCh(x,f),t=pTh(x,f),phi=pPhi(x),sk=PSKEW*((x-PX0)/(1-PX0))**2-rot,z0=pZ0(r),cx=Math.cos(phi),cz=Math.sin(phi),cs=Math.cos(sk),sn=Math.sin(sk),out=[];
+  for(let k=0;k<2*n;k++){let s,h;if(k<n){s=-c/2+c*k/n;const u=2*s/c;h=Math.max(0.6,t*(1-u*u));}else{s=c/2-c*(k-n)/n;const u=2*s/c;h=-0.6-0.04*t*(1-u*u);}
+    const u=s*cx-h*cz;out.push(PV(u*cs+r*sn,-u*sn+r*cs,z0+s*cz+h*cx));}return out;}
+function pBlade(f,rot,mat,x1=1,xs=PX0){if(x1-xs<0.005)return;const rows=[],N=Math.max(2,Math.round(60*(x1-xs)));for(let i=0;i<=N;i++)rows.push(pSec(xs+(x1-xs)*i/N,f,rot));
+  M(grid(rows,true),mat,false);[rows[0],rows[N]].forEach(s=>{const c=s.reduce((a,p)=>a.add(p),V(0,0,0)).multiplyScalar(1/s.length);M(grid([s,s.map(()=>c)],true),mat,false);});}
+const pBlades=(f,mat,xs)=>[0,1,2].forEach(i=>pBlade(f,i*2*PI/3,mat,1,xs));
+function pRev(prof,a1,mat){if(a1<0.01)return;const rows=[],n=Math.max(2,Math.round(64*a1/(2*PI)));for(let j=0;j<=n;j++){const q=a1*j/n;rows.push(prof.map(([r,z])=>PV(r*Math.sin(q),r*Math.cos(q),z)));}M(grid(rows),mat,false);}
+const pBarrel=(mat,bored)=>pRev(bored?[[PH0-PWALL,0],[PH0,0],[PH1,PHL],[PH1-PWALL,PHL],[PH0-PWALL,0]]:[[0,0],[PH0,0],[PH1,PHL],[0,PHL]],2*PI,mat);
+function pMap(g,a=0){const p=g.attributes.position,c=Math.cos(a),s=Math.sin(a);for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i),v=PV(x*c-y*s,x*s+y*c,z);p.setXYZ(i,v.x,v.y,v.z);}g.computeVertexNormals();return g;}
+function pRibs(t,mat){if(t<0.01)return;[1,3,5].forEach(k=>{const r1=16+(31.6-16)*t,r2=16+(28.3-16)*t,g=new T3.ExtrudeGeometry(shp([[16,8],[r1,8],[r2,92],[16,92]]),{depth:5,bevelEnabled:false});g.translate(0,0,-2.5);
+  const p=g.attributes.position;for(let i=0;i<p.count;i++){const r=p.getX(i),z=p.getY(i),w=p.getZ(i);p.setXYZ(i,r,w,z);}M(pMap(g,k*PI/3),mat,false);});}
+function pSleeve(bore,mat){const sp=[],w=PI/30;for(let k=0;k<15;k++){const a=2*PI*k/15;[[-w,10],[-w*0.6,11.5],[w*0.6,11.5],[w,10]].forEach(([d,r])=>sp.push(new T3.Vector2(r*Math.cos(a+d),r*Math.sin(a+d))));}
+  const part=(z0,z1,hole)=>{if(z1-z0<0.5)return;const s=new T3.Shape();s.absarc(0,0,PSL,0,2*PI,false);if(hole)s.holes.push(new T3.Path(sp.slice().reverse()));const g=new T3.ExtrudeGeometry(s,{depth:z1-z0,bevelEnabled:false,curveSegments:40});g.translate(0,0,z0);M(pMap(g),mat,false);};
+  part(-0.01,PHL*bore,true);part(PHL*bore,PHL,false);return sp;}
+const pAxis=()=>L([PV(0,0,-40),PV(0,0,150)],AXM);
+const PSTEP='models/propeller.step';
+const PROPOPS=[
+["1. Hub barrel","Revolve a tapered profile into the barrel that carries the blades",["revolve"],t=>{pAxis();L([[0,0],[PH0,0],[PH1,PHL],[0,PHL]].map(([r,z])=>PV(0,r+0.3,z)),DASH,true);pRev([[0,0],[PH0,0],[PH1,PHL],[0,PHL]],t*2*PI,R());return 'Ø74 to Ø66 mm, 100 mm long';}],
+["2. Pitch helices","Helices at three radii set the 17-inch pitch every section must follow",["helix"],t=>{pAxis();pBarrel(MAT.base);[0.3,0.6,1].forEach(x=>{const r=x*PR,z0=pZ0(r);tube(crv(u=>{const q=-0.9+1.8*u;return PV(r*Math.sin(q),r*Math.cos(q),z0+PP*q/(2*PI));},60),0.012,120,t,R(),6);});return 'Advance 432 mm per turn';}],
+["3. Blade sections","Twelve airfoil sections, each turned to its pitch angle, raked aft and skewed",["3d-spline"],t=>{pAxis();pBarrel(MAT.base);const k=Math.max(1,Math.ceil(t*PST.length));PST.slice(0,k).forEach(x=>L(pSec(x,1),DASH,true));const x=PST[k-1];return 'r '+Math.round(x*PR)+' mm, pitch angle '+Math.round(pPhi(x)*180/PI)+'°';}],
+["4. Loft the blade","Smooth loft through the sections, guided by leading and trailing edges",["loft-with-guide-curves","3d-spline"],t=>{pAxis();pBarrel(MAT.base);PST.forEach(x=>L(pSec(x,0),DASH,true));[0,24].forEach(k=>L(crv(u=>pSec(PX0+(1-PX0)*u,0)[k],60)));pBlade(0,0,R(),PX0+(1-PX0)*t);return 'Tip skew 28°, rake 15°';}],
+["5. Flared root","Root sections grow wider and thicker, a blend whose radius varies along the chord",["variable-radius-fillet"],t=>{pAxis();pBarrel(MAT.base);pBlade(t,0,R());return 'Root +'+Math.round(20*t)+' mm chord, +'+Math.round(9*t)+' mm thick';}],
+["6. Pattern the blades","Copy the blade twice around the shaft axis",["circular-pattern"],t=>{pAxis();pBarrel(MAT.base);pBlade(1,0,MAT.res);[1,2].forEach(i=>{const a=cl(t*1.25-(i-1)*0.25);if(a>0.01)pBlade(1,i*2*PI/3*sm(a),R());});return '3 blades at 120°';}],
+["7. Combine and bore","Blades and barrel become one body, then the exhaust passage is cut through",["combine","cut-and-hole"],t=>{pAxis();pBlades(1,MAT.res,t>0.99?0.19:PX0);pBarrel(R(),t>0.99);if(t<0.99){const z=-PHL*(1-t);pRev([[0,z-1],[PH0-PWALL+0.5,z-1],[PH1-PWALL+0.5,z+PHL+1],[0,z+PHL+1]],2*PI,MAT.tool);}return 'Exhaust passage Ø64 to Ø56 mm';}],
+["8. Sleeve and ribs","Revolve the inner sleeve, then three ribs tie it to the barrel",["revolve","rib","circular-pattern"],t=>{pBlades(1,MAT.res,0.19);pBarrel(MAT.res,true);pSleeve(0,R());pRibs(cl((t-0.2)/0.8),R());return '5 mm ribs between the blades';}],
+["9. Spline bore","A 15-tooth spline is cut through the sleeve to drive the prop",["cut-and-hole","circular-pattern"],t=>{pBlades(1,MAT.res,0.19);pBarrel(MAT.res,true);pRibs(1,MAT.res);const sp=pSleeve(t,R());if(t<0.99){const g=new T3.ExtrudeGeometry(new T3.Shape(sp),{depth:PHL+30,bevelEnabled:false});g.translate(0,0,PHL*t-PHL-25);M(pMap(g),MAT.tool,false);}return '15 teeth, Ø23 mm';}],
+["10. Zebra check","Stripes run smoothly across each blade, so the lofted surfaces are fair",["zebra-stripes","curvature-map"],t=>{pBlades(1,MAT.zebra,0.19);pBarrel(MAT.res,true);pRibs(1,MAT.res);pSleeve(1,MAT.res);return '13¼" × 17", 3 blades, 1.38 kg aluminium';}]
+].map((e,i)=>[EXT,'Outboard propeller',e[0],e[1],e[3],'propeller-'+(i+1),e[2],PSTEP]);
+OPS.push(...PROPOPS);
 const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 OPS.forEach(o=>{if(o.length<6)o.push(slug(o[2]));});
-const NEX=EXOPS.length,EX0=OPS.length-NEX,nextEx=i=>EX0+(i-EX0+1)%NEX;
-document.getElementById('count').textContent=(OPS.length-NEX)+' operations, 1 worked example';
+const NEX=EXOPS.length+PROPOPS.length,EX0=OPS.length-NEX,exGroup=i=>OPS.map((o,j)=>j>=EX0&&o[1]===OPS[i][1]?j:-1).filter(j=>j>=0),nextEx=i=>{const a=exGroup(i);return a[(a.indexOf(i)+1)%a.length];};
+document.getElementById('count').textContent=(OPS.length-NEX)+' operations, 2 worked examples';
 
 const vw=document.getElementById('vw');
 const ren=new T3.WebGLRenderer({antialias:true,alpha:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setClearColor(0x000000,0);vw.appendChild(ren.domElement);
@@ -237,14 +277,15 @@ vw.addEventListener('pointerup',()=>drag=null);
 const tree=document.getElementById('tree');let tier='',grp='',links=[];
 const tiers={},narrow=matchMedia('(max-width:600px)');let box=null;
 function openTier(name,open){Object.entries(tiers).forEach(([k,t])=>{const on=k===name&&open;t.b.setAttribute('aria-expanded',on);t.box.hidden=!on;});panelOpen=!!name&&open;size();}
-OPS.forEach((o,i)=>{if(o[0]!==tier){tier=o[0];grp='';const name=tier,b=document.createElement('button');b.type='button';b.className='tier';b.innerHTML='<span></span><span class="n"></span>';b.firstChild.textContent=name==='Worked example'?'Example':name;b.title=name;box=document.createElement('div');box.className='items';box.id='tier-'+slug(name);b.setAttribute('aria-controls',box.id);b.onclick=()=>openTier(name,b.getAttribute('aria-expanded')!=='true');box.hidden=true;document.getElementById('tabs').append(b);tree.append(box);tiers[name]={b,box,n:0};}tiers[tier].n++;tiers[tier].b.lastChild.textContent=tiers[tier].n;if(o[1]!==grp){grp=o[1];const h=document.createElement('div');h.className='grp';h.textContent=grp;box.appendChild(h);}const a=document.createElement('a');a.href='#'+o[5];a.textContent=o[2];a.onclick=e=>{e.preventDefault();go(i);if(narrow.matches)openTier('',false);};box.appendChild(a);links.push(a);});
-const usesEl=document.getElementById('uses'),nx=document.getElementById('nx');
-function go(i){select(i);openTier(OPS[i][0],true);try{history.replaceState(null,'','#'+OPS[i][5]);}catch(_){}}
+OPS.forEach((o,i)=>{if(o[0]!==tier){tier=o[0];grp='';const name=tier,b=document.createElement('button');b.type='button';b.className='tier';b.innerHTML='<span></span><span class="n"></span>';b.firstChild.textContent=name==='Worked examples'?'Examples':name;b.title=name;box=document.createElement('div');box.className='items';box.id='tier-'+slug(name);b.setAttribute('aria-controls',box.id);b.onclick=()=>openTier(name,b.getAttribute('aria-expanded')!=='true');box.hidden=true;document.getElementById('tabs').append(b);tree.append(box);tiers[name]={b,box,n:0};}tiers[tier].n++;tiers[tier].b.lastChild.textContent=tiers[tier].n;if(o[1]!==grp){grp=o[1];const h=document.createElement('div');h.className='grp';h.textContent=grp;box.appendChild(h);}const a=document.createElement('a');a.href='#'+o[5];a.textContent=o[2];a.onclick=e=>{e.preventDefault();go(i);if(narrow.matches)openTier('',false);};box.appendChild(a);links.push(a);});
+const usesEl=document.getElementById('uses'),nx=document.getElementById('nx'),dlA=document.getElementById('dl');
+function reveal(i){const a=links[i],bx=a.parentElement;if(bx.hidden)return;bx.scrollTop+=a.getBoundingClientRect().top-bx.getBoundingClientRect().top-bx.clientHeight/2+a.offsetHeight/2;}
+function go(i){select(i);openTier(OPS[i][0],true);reveal(i);try{history.replaceState(null,'','#'+OPS[i][5]);}catch(_){}}
 nx.onclick=()=>go(nextEx(cur));
-function select(i){cur=i;T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
+function select(i){if(OPS[i][1]==='Outboard propeller'&&OPS[cur][1]!==OPS[i][1]){ry=2.3;rx=0.2;}cur=i;T=0;start=performance.now();setPlay(!reduce);links.forEach(x=>x.classList.remove('on'));links[i].classList.add('on');const o=OPS[i];document.getElementById('tn').textContent=o[2];document.getElementById('td').textContent=o[3];document.getElementById('lv').textContent=o[0];
 usesEl.replaceChildren();const u=o[6]||[];usesEl.hidden=!u.length;if(u.length){const s=document.createElement('span');s.textContent='Uses';usesEl.appendChild(s);u.forEach(sl=>{const j=OPS.findIndex(q=>q[5]===sl);if(j<0)return;const b=document.createElement('button');b.type='button';b.textContent=OPS[j][2];b.onclick=()=>go(j);usesEl.appendChild(b);});}
-nx.hidden=i<EX0;nx.textContent=i===OPS.length-1?'Start over':'Next step';if(reduce){T=1;}}
-function fromHash(){const h=(location.hash||'').slice(1),i=OPS.findIndex(o=>o[5]===h);select(i>=0?i:0);openTier(OPS[cur][0],!narrow.matches);}
+nx.hidden=i<EX0;nx.textContent=i>=EX0&&exGroup(i).at(-1)===i?'Start over':'Next step';dlA.hidden=!o[7];if(o[7])dlA.href=o[7];if(reduce){T=1;}}
+function fromHash(){const h=(location.hash||'').slice(1),i=OPS.findIndex(o=>o[5]===h);select(i>=0?i:0);openTier(OPS[cur][0],!narrow.matches);reveal(cur);}
 window.addEventListener('hashchange',fromHash);fromHash();
 
 function loop(now){if(playing&&cur>=EX0&&now-start>3900){select(nextEx(cur));}if(playing){const ph=((now-start)%4000)/2600;const x=Math.min(1,ph);T=x*x*(3-2*x);}

@@ -9,7 +9,9 @@ An interactive 3D guide to the modeling operations behind real parts, from extru
 ## What's inside
 
 - **44 operations** in two tiers, Basics and Advanced, grouped like a CAD feature tree.
-- **A worked example**: a 6'0" × 19.7" × 2.5" shortboard (28.5 L) modeled in ten steps, from the outline sketch to a zebra-stripe surface check.
+- **Two worked examples**, each built in ten steps from operations in the atlas:
+  - a 6'0" × 19.7" × 2.5" shortboard (28.5 L), from the outline sketch to a zebra-stripe surface check;
+  - a 13¼" × 17" three-blade outboard propeller, backed by a real CAD model you can download as a [STEP file](models/propeller.step).
 - **Deep links** for every operation, so you can share one directly, for example [`#loft`](https://sesasa.github.io/cad-operations-atlas/#loft) or [`#zebra-stripes`](https://sesasa.github.io/cad-operations-atlas/#zebra-stripes).
 - Works on phones and follows your system's light or dark mode.
 
@@ -30,9 +32,9 @@ An interactive 3D guide to the modeling operations behind real parts, from extru
 | Freeform and analysis | Subdivision cage, Zebra stripes, Curvature map, Draft analysis, Scan to surface |
 | Industry tools | Sheet metal bend, Weldment frame, Core and cavity |
 
-## Worked example: a 6'0" shortboard
+## Worked example 1: a 6'0" shortboard
 
-The Example tab holds a complete part built only from operations in the atlas. Each step has "Uses" chips that jump to the operations it relies on.
+The Examples tab holds complete parts built only from operations in the atlas. Each step has "Uses" chips that jump to the operations it relies on.
 
 | Step | What happens | Uses |
 | --- | --- | --- |
@@ -48,6 +50,43 @@ The Example tab holds a complete part built only from operations in the atlas. E
 | 10. Zebra check | Stripes confirm the surfaces are fair | Zebra stripes, Curvature map |
 
 ![Thruster fins step in dark mode](docs/screenshot-fins.png)
+
+## Worked example 2: an outboard propeller
+
+A 13¼" diameter, 17" pitch, three-blade aluminium propeller with a through-hub exhaust and a 15-tooth spline bore. It comes as a real parametric model: [`models/propeller.py`](models/propeller.py) builds it with [CadQuery](https://cadquery.readthedocs.io/) on OpenCascade (the geometry kernel FreeCAD uses) and exports [`models/propeller.step`](models/propeller.step), which opens in FreeCAD, SOLIDWORKS, Fusion, Onshape and other CAD tools. The page draws the same blade from the same formulas.
+
+| | |
+| --- | --- |
+| Diameter × pitch | 337.6 mm × 432 mm (13¼" × 17") |
+| Blades | 3, raked 15° aft, 28° tip skew |
+| Sections | 12 flat-face airfoil sections, pitch angle 67° at the root to 22° at the tip |
+| Hub | Barrel Ø74 to Ø66 mm × 100 mm, exhaust passage, sleeve, 3 ribs, 15-tooth spline |
+| Volume and mass | 510 cm³, 1.38 kg in aluminium (2.70 g/cm³) |
+
+| Step | What happens | Uses |
+| --- | --- | --- |
+| 1. Hub barrel | Revolve a tapered profile into the barrel | Revolve |
+| 2. Pitch helices | Helices at three radii set the 17" pitch | Helix |
+| 3. Blade sections | Twelve airfoil sections, each turned to its pitch angle, raked and skewed | 3D spline |
+| 4. Loft the blade | Smooth loft through the sections, guided by leading and trailing edges | Loft with guide curves |
+| 5. Flared root | Root sections grow wider and thicker, blending into the hub | Variable-radius fillet |
+| 6. Pattern the blades | Copy the blade twice around the shaft axis | Circular pattern |
+| 7. Combine and bore | Join blades and barrel, then cut the exhaust passage | Combine, Cut and hole |
+| 8. Sleeve and ribs | Inner sleeve tied to the barrel by three ribs | Revolve, Rib, Circular pattern |
+| 9. Spline bore | 15-tooth spline cut through the sleeve | Cut and hole, Circular pattern |
+| 10. Zebra check | Stripes run smoothly across each blade | Zebra stripes, Curvature map |
+
+[![Propeller zebra check step](docs/screenshot-propeller.png)](https://sesasa.github.io/cad-operations-atlas/#propeller-10)
+
+To rebuild the STEP file after changing a dimension:
+
+```sh
+pip install cadquery
+python models/propeller.py
+# valid: True  diameter: 337.6 mm  length: 112.1 mm  volume: 510.1 cm3  mass (Al 2.70 g/cm3): 1.38 kg
+```
+
+A note on the root: a true variable-radius fillet between the lofted blade and the conical barrel fails in OpenCascade, a common problem with this kind of intersection. The model uses the usual propeller-design alternative instead: the root sections flare wider (+20 mm chord) and thicker (+9 mm), so the loft itself blends into the hub with a radius that varies along the chord.
 
 ## Color key
 
@@ -73,7 +112,7 @@ An internet connection is needed for [three.js r128](https://threejs.org/) (load
 
 ## Notes
 
-The previews are simplified schematics for learning, not CAD kernels. Operation names follow SOLIDWORKS terms; most CAD tools (Fusion, Onshape, CATIA, NX, Rhino) have the same operations under similar names.
+The previews are simplified schematics for learning, not CAD kernels; the propeller is the exception, with a real solid model in `models/`. Operation names follow SOLIDWORKS terms; most CAD tools (Fusion, Onshape, CATIA, NX, Rhino) have the same operations under similar names.
 
 ## License
 
